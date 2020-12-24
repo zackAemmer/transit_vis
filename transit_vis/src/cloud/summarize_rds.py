@@ -85,7 +85,7 @@ def connect_to_rds():
         password=cfg.PWD)
     return conn
 
-def get_last_xdays_results(conn, num_days, rds_limit):
+def get_last_xdays_results(conn, num_days_back, rds_limit):
     """Queries the last x days worth of data from the RDS data warehouse.
 
     Uses the database connection to execute a query for the last x days of
@@ -99,6 +99,8 @@ def get_last_xdays_results(conn, num_days, rds_limit):
 
     Args:
         conn: A Psycopg Connection object for the RDS data warehouse.
+        num_days_back: An integer specifying how many days back to start the
+            24hr query.
         rds_limit: An integer specifying the maximum number of rows to query.
             Useful for debugging and checking output before making larger
             queries. Set to 0 for no limit.
@@ -111,33 +113,16 @@ def get_last_xdays_results(conn, num_days, rds_limit):
     end_time = round(datetime.now().timestamp())
     start_time = end_time - (24*60*60)
     i = 1
-    while i < num_days:
+    while i < num_days_back:
         end_time = start_time
         start_time = end_time - (24*60*60)
         i += 1
-
-    if isinstance(rds_limit, int):
-        pass
-    else:
-        raise TypeError('rds_limit must be an integer')
-
-    if rds_limit >= 0:
-        pass
-    else:
-        raise ValueError('rds_limit must be 0 or greater')
-
     if rds_limit > 0:
         query_text = f"SELECT * FROM active_trips_study WHERE collectedtime " \
             f"BETWEEN {start_time} AND {end_time} LIMIT {rds_limit};"
     else:
         query_text = f"SELECT * FROM active_trips_study WHERE collectedtime " \
             f"BETWEEN {start_time} AND {end_time};"
-
-    if conn is not None:
-        pass
-    else:
-        raise TypeError('no Psycopg connection found')
-
     with conn.cursor() as curs:
         curs.execute(query_text)
         daily_results = convert_cursor_to_tabular(curs)

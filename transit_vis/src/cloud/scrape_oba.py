@@ -53,40 +53,36 @@ def upload_to_rds(to_upload, conn, collected_time):
     to_upload_list = []
     for bus_status in to_upload:
         to_upload_list.append(
-            (remove_agency_tag(bus_status['tripId']),
-            remove_agency_tag(bus_status['vehicleId']),
-            round(bus_status['location']['lat'], 6),
-            round(bus_status['location']['lon'], 6),
-            round(bus_status['tripStatus']['orientation']),
-            bus_status['tripStatus']['scheduleDeviation'],
-            round(bus_status['tripStatus']['totalDistanceAlongTrip'], 6),
-            round(bus_status['tripStatus']['distanceAlongTrip'], 6),
-            remove_agency_tag(bus_status['tripStatus']['closestStop']),
-            remove_agency_tag(bus_status['tripStatus']['nextStop']),
-            int(str(bus_status['tripStatus']['lastLocationUpdateTime'])[:-3]),
-            collected_time))
+            (str(remove_agency_tag(bus_status['tripId'])),
+            str(remove_agency_tag(bus_status['vehicleId'])),
+            str(round(bus_status['location']['lat'], 10)),
+            str(round(bus_status['location']['lon'], 10)),
+            str(round(bus_status['tripStatus']['orientation'])),
+            str(bus_status['tripStatus']['scheduleDeviation']),
+            str(round(bus_status['tripStatus']['totalDistanceAlongTrip'], 10)),
+            str(round(bus_status['tripStatus']['distanceAlongTrip'], 10)),
+            str(remove_agency_tag(bus_status['tripStatus']['closestStop'])),
+            str(remove_agency_tag(bus_status['tripStatus']['nextStop'])),
+            str(bus_status['tripStatus']['lastLocationUpdateTime'])[:-3],
+            str(collected_time)))
     with conn.cursor() as curs:
-        execute_values(
-            curs,
-            "INSERT INTO active_trips_study (tripid, vehicleid, lat, lon, orientation, scheduledeviation, totaltripdistance, tripdistance, closeststop, nextstop, locationtime, collectedtime) VALUES %s",
-            to_upload_list)
-    return to_upload_list
+        args_str = ','.join(curs.mogrify('(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', x).decode('utf-8') for x in to_upload_list)
+        query_str = 'INSERT INTO active_trips_study (tripid, vehicleid, lat, lon, orientation, scheduledeviation, totaltripdistance, tripdistance, closeststop, nextstop, locationtime, collectedtime) VALUES ' + args_str
+        curs.execute(query_str)
+        conn.commit()
+    return query_str
 
 def main_function():
     endpoint = 'http://api.pugetsound.onebusaway.org/api/where/vehicles-for-agency/1.json?key='
     conn = connect_to_rds()
     current_hour, current_epoch = get_epoch_and_pst_24hr()
-    i = 0
-    while current_hour < 19 and i < 10:
+    while current_hour < 19:
         response = query_active_trips(cfg.API_KEY, endpoint)
         current_hour, current_epoch = get_epoch_and_pst_24hr()
         cleaned_response = clean_active_trips(response)
-        upload_to_rds(cleaned_response, conn, current_epoch)
-        print('sleeping')
-        time.sleep(2)
-        print('done')
-        i = i+1
+        args_str = upload_to_rds(cleaned_response, conn, current_epoch)
+        time.sleep(8)
     conn.close()
-    
+
 if __name__ == "__main__":
     main_function()
