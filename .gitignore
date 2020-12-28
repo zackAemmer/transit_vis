@@ -1,1 +1,6 @@
 config.py
+aws_gtfs_ec2.pem
+aws_gtfs_ec2.ppk
+transit_vis/__pycache__/
+transit_vis/src/__pycache__/
+transit_vis/src/cloud/__pycache__/
