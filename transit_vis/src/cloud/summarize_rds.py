@@ -14,13 +14,15 @@ smaller than 24hrs.
 
 
 from datetime import datetime
-from zipfile import ZipFile
+import json
 import requests
+from zipfile import ZipFile
 
 import boto3
 import numpy as np
 import pandas as pd
 import psycopg2
+from scikit.learn import BallTree
 
 from transit_vis.src import config as cfg
 
@@ -38,7 +40,8 @@ def convert_cursor_to_tabular(query_result_cursor):
         query_result_cursor: A Psycopg Cursor object pointing to the first
             result from a query for bus locations from the data warehouse. The
             results should contain columns for tripid, vehicleid, orientation,
-            scheduledeviation, locationtime, and collectedtime.
+            scheduledeviation, closeststop, nextstop, locationtime, and
+            collectedtime.
 
     Returns:
         A Pandas Dataframe object containing the query results in tabular
@@ -63,6 +66,8 @@ def convert_cursor_to_tabular(query_result_cursor):
     daily_results['vehicleid'] = daily_results['vehicleid'].astype(int)
     daily_results['orientation'] = daily_results['orientation'].astype(int)
     daily_results['scheduledeviation'] = daily_results['scheduledeviation'].astype(int)
+    daily_results['closeststop'] = daily_results['closeststop'].astype(int)
+    daily_results['nextstop'] = daily_results['nextstop'].astype(int)
     daily_results['locationtime'] = daily_results['locationtime'].astype(int)
     daily_results['collectedtime'] = daily_results['collectedtime'].astype(int)
     return daily_results
@@ -77,7 +82,6 @@ def connect_to_rds():
         A Psycopg Connection object for the RDS data warehouse specified in
         config.py.
     """
-
     conn = psycopg2.connect(
         host=cfg.HOST,
         database=cfg.DATABASE,
@@ -107,7 +111,7 @@ def get_last_xdays_results(conn, num_days_back, rds_limit):
 
     Returns:
         A Pandas Dataframe object containing the results in the database for the
-        last x day period.
+        last x day period, and an integer for epoch time of the query end.
     """
     # Query the specified number of days back from current time
     end_time = round(datetime.now().timestamp())
@@ -117,16 +121,17 @@ def get_last_xdays_results(conn, num_days_back, rds_limit):
         end_time = start_time
         start_time = end_time - (24*60*60)
         i += 1
+    # Database has index on locationtime attribute
     if rds_limit > 0:
-        query_text = f"SELECT * FROM active_trips_study WHERE collectedtime " \
+        query_text = f"SELECT * FROM active_trips_study WHERE locationtime " \
             f"BETWEEN {start_time} AND {end_time} LIMIT {rds_limit};"
     else:
-        query_text = f"SELECT * FROM active_trips_study WHERE collectedtime " \
+        query_text = f"SELECT * FROM active_trips_study WHERE locationtime " \
             f"BETWEEN {start_time} AND {end_time};"
     with conn.cursor() as curs:
         curs.execute(query_text)
         daily_results = convert_cursor_to_tabular(curs)
-    return daily_results
+    return daily_results, end_time
 
 def update_gtfs_route_info():
     """Downloads the latest trip-route conversions from the KCM GTFS feed.
@@ -138,15 +143,16 @@ def update_gtfs_route_info():
     matching segments.
 
     Returns:
-        1 when the download and unzipping process is complete.
+        A string with the location of the folder where the GTFS data is saved.
     """
     url = 'http://metro.kingcounty.gov/GTFS/google_transit.zip'
+    zip_location = './transit_vis/data/google_transit'
     req = requests.get(url, allow_redirects=True)
     with open('./transit_vis/data/google_transit.zip', 'wb') as g_file:
         g_file.write(req.content)
     with ZipFile('./transit_vis/data/google_transit.zip', 'r') as zip_obj:
         zip_obj.extractall('./transit_vis/data/google_transit')
-    return 1
+    return zip_location
 
 def preprocess_trip_data(daily_results):
     """Cleans the tabular trip data and calculates average speed.
@@ -158,7 +164,9 @@ def preprocess_trip_data(daily_results):
     of duplicate data. Speeds are calculated between consecutive bus locations
     based on the distance traveled and the time between those locations. Speeds
     that are below 0 m/s, or above 30 m/s are assumed to be GPS multipathing or
-    other recording errors and are removed.
+    other recording errors and are removed. Deviation change indicates an
+    unexpected delay manifested as a change in schedule deviation. Stop delay is
+    true if the currentstop attribute changed from the previous location.
 
     Args:
         daily_results: A Pandas Dataframe object containing bus location, time,
@@ -166,7 +174,8 @@ def preprocess_trip_data(daily_results):
 
     Returns:
         A Pandas Dataframe object containing the cleaned set of results with an
-        additional column named 'avg_speed_m_s'.
+        additional column named 'avg_speed_m_s', another column named 
+        'deviation_change_s' and another named 'at_stop'.
     """
     # Remove duplicate trip locations
     daily_results.drop_duplicates(
@@ -177,10 +186,14 @@ def preprocess_trip_data(daily_results):
     # Offset tripdistance, locationtime, and tripids by 1
     daily_results['prev_tripdistance'] = 1
     daily_results['prev_locationtime'] = 1
+    daily_results['prev_deviation'] = 1
     daily_results['prev_tripid'] = 1
+    daily_results['prev_stopid'] = 1
     daily_results['prev_tripdistance'] = daily_results['tripdistance'].shift(1)
     daily_results['prev_locationtime'] = daily_results['locationtime'].shift(1)
+    daily_results['prev_deviation'] = daily_results['scheduledeviation'].shift(1)
     daily_results['prev_tripid'] = daily_results['tripid'].shift(1)
+    daily_results['prev_stopid'] = daily_results['nextstop'].shift(1)
 
     # Remove NA rows, and rows where tripid is different (last recorded location)
     daily_results.loc[daily_results.tripid == daily_results.prev_tripid, 'tripid'] = None
@@ -193,6 +206,13 @@ def preprocess_trip_data(daily_results):
         - daily_results['prev_locationtime']
     daily_results.loc[:, 'avg_speed_m_s'] = daily_results['dist_diff'] \
         / daily_results['time_diff']
+
+    # Calculate change in schedule deviation
+    daily_results.loc[:, 'deviation_change_s'] = daily_results['scheduledeviation'] \
+        - daily_results['prev_deviation']
+
+    # Find rows where the delay/speed incorporated a transit stop (nextstop changed)
+    daily_results.loc[daily_results['stopid'] != daily_results['prev_stopid'], 'at_stop'] = True
 
     # Remove rows where speed is below 0 or above 30 and round
     daily_results = daily_results[daily_results['avg_speed_m_s'] >= 0]
@@ -210,7 +230,7 @@ def get_nearest(src_points, candidates):
     list of source and candidate points in an efficient manner. Uses Haversine
     (great sphere) distance, which means points should be in lat/lon coordinate
     format.
-    
+
     Args:
         src_points: A Pandas Dataframe consisting of 2 columns named 'lat' and
             'lon'. Each row is a bus coordinate to be assigned.
@@ -245,11 +265,10 @@ def assign_results_to_segments(kcm_routes, daily_results):
     using the get_nearest function to calculate distances between bus locations
     and points on segments in the routes geojson. A bus location can only be
     assigned to a line segment from the route that it belongs to.
-    
+
     Args:
         kcm_routes: A geojson file (generated during initialize_dynamodb.py)
-            that contains features for each route meeting a minimum length. Must
-            have [route_id] and [segment_id] identifier elements.
+            that contains features for each segment in the bus network.
         daily_results: A Pandas Dataframe containing the preprocessed data
             queried from the RDS data warehouse.
 
@@ -258,17 +277,21 @@ def assign_results_to_segments(kcm_routes, daily_results):
         additional columns for the closest route and segment ids.
     """
     # Convert segment data from json format to tabular
+    # vis_id is unique id, route_id helps narrow down when matching
     feature_coords = []
+    feature_lengths = []
+    vis_ids = []
     route_ids = []
-    seg_ids = []
     for feature in kcm_routes['features']:
         for coord_pair in feature['geometry']['coordinates']:
             feature_coords.append(coord_pair)
+            feature_lengths.append(feature['properties']['SEGLENGTH'])
+            vis_ids.append(feature['vis_id'])
             route_ids.append(feature['route_id'])
-            seg_ids.append(feature['segment_id'])
     segments = pd.DataFrame()
     segments['route_id'] = route_ids
-    segments['segment_id'] = seg_ids
+    segments['vis_id'] = vis_ids
+    segments['length'] = feature_lengths
     segments['lat'] = np.array(feature_coords)[:,0]
     segments['lon'] = np.array(feature_coords)[:,1]
 
@@ -309,7 +332,7 @@ def connect_to_dynamo_table(table_name):
     table = dynamodb.Table(table_name)
     return table
 
-def upload_to_dynamo(dynamodb_table, to_upload):
+def upload_to_dynamo(dynamodb_table, to_upload, end_time):
     """Uploads the speeds gathered and processed from the RDS to dynamodb.
 
     Groups all bus speed observations by route/segment ids and averages the
@@ -321,39 +344,55 @@ def upload_to_dynamo(dynamodb_table, to_upload):
         dynamodb_table: A boto3 Table pointing to a dynamodb table that has been
             initialized to contain the same segments as to_upload.
         to_upload: A Pandas Dataframe to be uploaded to dynamodb containing
-            route ids, and their average speeds
+            route ids, and their average speeds.
+        end_time: An epoch time integer that represents the date to assign the
+            values to.
 
     Returns:
         The length of the to_upload argument.
     """
-    if isinstance(to_upload, pd.DataFrame):
-        pass
-    else:
-        raise TypeError('to_upload must be a pandas dataframe')
-
-    # Aggregate the observed bus speeds by their route/segment ids
-    to_upload = to_upload[['route_id', 'trip_short_name', 'avg_speed_m_s']]
-    to_upload = to_upload.groupby(['route_id', 'trip_short_name']).mean().reset_index()
+    # Get formatted date to assign to speed data
+    collection_date = datetime.datetime.fromtimestamp(end_time).strftime('%c')
+    # Aggregate the observed bus speeds by their ids
+    to_upload = to_upload[['vis_id', 'route_id', 'avg_speed_m_s', 'deviation_change_s']]
+    to_upload = to_upload.groupby(['vis_id']).mean().reset_index()
+    to_upload_var = to_upload.groupby(['vis_id']).var().reset_index()
+    to_upload_count = to_upload.groupby(['vis_id']).count().reset_index()
+    to_upload = to_upload.join(to_upload_var, on='vis_id', suffix='_var')
+    to_upload = to_upload.join(to_upload_count, on='vis_id', suffix='_count')
+    # Round all calculated means and variances, convert to string
     to_upload['avg_speed_m_s'] = round(to_upload['avg_speed_m_s'], 1)
+    to_upload['avg_speed_m_s_var'] = round(to_upload['avg_speed_m_s_var'], 1)
     to_upload['avg_speed_m_s'] = to_upload['avg_speed_m_s'].apply(str)
+    to_upload['avg_speed_m_s_var'] = to_upload['avg_speed_m_s_var'].apply(str)
+    to_upload['deviation_change_s'] = round(to_upload['deviation_change_s'], 1)
+    to_upload['deviation_change_s_var'] = round(to_upload['deviation_change_s_var'], 1)
+    to_upload['deviation_change_s'] = to_upload['deviation_change_s'].apply(str)
+    to_upload['deviation_change_s_var'] = to_upload['deviation_change_s_var'].apply(str)
     to_upload = to_upload.to_dict(orient='records')
-
     # Update each route/segment id in the dynamodb with its new value
-    for track in to_upload:
+    for segment in to_upload:
         dynamodb_table.update_item(
             Key={
-                'route_id': track['route_id'],
-                'local_express_code': track['trip_short_name'][0]},
-            UpdateExpression="SET avg_speed_m_s=:speed," \
-                "historic_speeds=list_append(" \
-                "if_not_exists(historic_speeds, :empty_list), :vals)",
+                'vis_id': segment['vis_id'],
+                'compkey': segment['compkey']},
+            UpdateExpression="SET date=list_append(if_not_exists(date, :empty_list), :date_val)" \
+                "mean_speed_m_s=list_append(if_not_exists(mean_speed_m_s, :empty_list), :mean_speed_val)" \
+                "var_speed_m_s=list_append(if_not_exists(var_speed_m_s, :empty_list), :var_speed_val)" \
+                "mean_deviation_s=list_append(if_not_exists(mean_deviation_s, :empty_list), :mean_deviation_val)" \
+                "var_deviation_s=list_append(if_not_exists(var_deviation_s, :empty_list), :var_deviation_val)" \
+                "sample_size=list_append(if_not_exists(sample_size, :empty_list), :size_val)",
             ExpressionAttributeValues={
-                ':speed': track['avg_speed_m_s'],
-                ':vals': [track['avg_speed_m_s']],
+                ':date_val': [collection_date],
+                ':mean_speed_val': [segment['avg_speed_m_s']],
+                ':var_speed_val': [segment['avg_speed_m_s_var']],
+                ':mean_deviation_val': [segment['deviation_change_s']],
+                ':var_deviation_val': [segment['deviation_change_s_var']],
+                ':size_val': [segment['avg_speed_m_s_count']],
                 ':empty_list': []})
     return len(to_upload)
 
-def main_function_summ(dynamodb_table_name, num_days, rds_limit):
+def summarize_rds(dynamodb_table_name, num_days, rds_limit):
     """Queries 24hrs of data from RDS, calculates speeds, and uploads them.
 
     Runs daily to take 24hrs worth of data stored in the data warehouse
@@ -387,16 +426,23 @@ def main_function_summ(dynamodb_table_name, num_days, rds_limit):
     print("Connecting to RDS...")
     conn = connect_to_rds()
     print("Querying data from RDS (10-20mins if no limit specified)...")
-    daily_results = get_last_xdays_results(conn, num_days, rds_limit)
+    daily_results, end_time = get_last_xdays_results(conn, num_days, rds_limit)
     print("Finished query; processing RDS data...")
     daily_results = preprocess_trip_data(daily_results)
 
-    # Load the gtfs trip-route info and segment shapefile
+    # Load the gtfs trip-route info
     print("Loading shapefile and GTFS files...")
     gtfs_trips = pd.read_csv('./transit_vis/data/google_transit/trips.txt')
     gtfs_trips = gtfs_trips[['route_id', 'trip_id', 'trip_short_name']]
     gtfs_routes = pd.read_csv('./transit_vis/data/google_transit/routes.txt')
     gtfs_routes = gtfs_routes[['route_id', 'route_short_name']]
+
+    # Load the route segments shapefile
+    with open('./transit_vis/data/kcm_routes.geojson') as shapefile:
+        kcm_routes = json.load(shapefile)
+
+    # Find the closest segment w/matching route for each speed in daily results
+    daily_results = assign_results_to_segments(kcm_routes, daily_results)
 
     # Merge scraped data with the gtfs data and alter route ids to fit schema
     print("Merging RDS data with GTFS files...")
@@ -412,12 +458,12 @@ def main_function_summ(dynamodb_table_name, num_days, rds_limit):
     # Upload to dynamoDB
     print("Uploading aggregated segment data to dynamoDB...")
     table = connect_to_dynamo_table(dynamodb_table_name)
-    success = upload_to_dynamo(table, daily_results)
-    return success
+    upload_length = upload_to_dynamo(table, daily_results, end_time)
+    return upload_length
 
 if __name__ == "__main__":
-    NUM_SEGMENTS_UPDATED = main_function_summ(
-        dynamodb_table_name='KCM_Bus_Routes',
+    NUM_SEGMENTS_UPDATED = summarize_rds(
+        dynamodb_table_name='KCM_Bus_Routes_Production',
         num_days=1,
-        rds_limit=10000)
+        rds_limit=0)
     print(f"Number of segments updated: {NUM_SEGMENTS_UPDATED}")

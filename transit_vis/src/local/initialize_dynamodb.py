@@ -122,8 +122,12 @@ def upload_segments_to_dynamo(dynamodb_resource, table_name, kcm_routes):
                     'route_id': route['properties']['join_ROUTE_ID'],
                     'local_express_code': route['properties']['join_LOCAL_EXPR'],
                     'route_num': route['properties']['join_ROUTE_NUM'],
-                    'dates': [],
-                    'speeds_m_s': []})
+                    'date': [],
+                    'mean_speed_m_s': [],
+                    'var_speed_m_s': [],
+                    'mean_deviation_s': [],
+                    'var_deviation_s': [],
+                    'sample_size': []})
     return 1
 
 def initialize_dynamodb(geojson_name, dynamodb_table_name):
