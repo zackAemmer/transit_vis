@@ -77,10 +77,10 @@ def create_dynamo_table(dynamodb_resource, table_name):
         TableName=table_name,
         KeySchema=[
             {'AttributeName': 'vis_id', 'KeyType': 'HASH'},
-            {'AttributeName': 'compkey', 'KeyType': 'RANGE'}],
+            {'AttributeName': 'route_id', 'KeyType': 'RANGE'}],
         AttributeDefinitions=[
             {'AttributeName': 'vis_id', 'AttributeType': 'N'},
-            {'AttributeName': 'compkey', 'AttributeType': 'N'}],
+            {'AttributeName': 'route_id', 'AttributeType': 'N'}],
         ProvisionedThroughput={
             'ReadCapacityUnits': 20,
             'WriteCapacityUnits': 20})
@@ -103,11 +103,8 @@ def upload_segments_to_dynamo(dynamodb_resource, table_name, kcm_routes):
             the table should be created.
         table_name: A string containing the name for the segments table.
         kcm_routes: A geojson object containing the features that should be
-            uploaded. Each feature must have a [ROUTE_ID] and a [LOCAL_EXPR]
-            property. Although this object also contains all of the geometry,
-            only the route and segment ids will be uploaded. The Folium map will
-            read the speeds from the databse and rejoin them to this file
-            locally for display.
+            uploaded. Although this object also contains all of the geometry,
+            only the route and segment ids will be uploaded.
 
     Returns:
         1 when the features are finished uploading to the table.
@@ -118,11 +115,11 @@ def upload_segments_to_dynamo(dynamodb_resource, table_name, kcm_routes):
             batch.put_item(
                 Item={
                     'vis_id': route['properties']['vis_id'],
-                    'compkey': route['properties']['COMPKEY'],
                     'route_id': route['properties']['join_ROUTE_ID'],
+                    'compkey': route['properties']['COMPKEY'],
                     'local_express_code': route['properties']['join_LOCAL_EXPR'],
                     'route_num': route['properties']['join_ROUTE_NUM'],
-                    'date': [],
+                    'record_date': [],
                     'mean_speed_m_s': [],
                     'var_speed_m_s': [],
                     'mean_deviation_s': [],
@@ -164,7 +161,6 @@ def initialize_dynamodb(geojson_name, dynamodb_table_name):
         dynamodb_resource,
         dynamodb_table_name,
         kcm_routes)
-
     # Return the number of features that are in the kcm data
     return len(kcm_routes['features'])
 

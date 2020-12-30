@@ -4,3 +4,7 @@ aws_gtfs_ec2.ppk
 transit_vis/__pycache__/
 transit_vis/src/__pycache__/
 transit_vis/src/cloud/__pycache__/
+transit_vis/src/local/__pycache__/
+transit_vis/data/google_transit.zip
+transit_vis/data/google_transit/*
+transit_vis/data/to_upload/*
