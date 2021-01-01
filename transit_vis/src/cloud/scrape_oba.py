@@ -66,10 +66,14 @@ def upload_to_rds(to_upload, conn, collected_time):
             str(bus_status['tripStatus']['lastLocationUpdateTime'])[:-3],
             str(collected_time)))
     with conn.cursor() as curs:
-        args_str = ','.join(curs.mogrify('(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', x).decode('utf-8') for x in to_upload_list)
-        query_str = 'INSERT INTO active_trips_study (tripid, vehicleid, lat, lon, orientation, scheduledeviation, totaltripdistance, tripdistance, closeststop, nextstop, locationtime, collectedtime) VALUES ' + args_str
-        curs.execute(query_str)
-        conn.commit()
+        try:
+            args_str = ','.join(curs.mogrify('(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', x).decode('utf-8') for x in to_upload_list)
+            query_str = 'INSERT INTO active_trips_study (tripid, vehicleid, lat, lon, orientation, scheduledeviation, totaltripdistance, tripdistance, closeststop, nextstop, locationtime, collectedtime) VALUES ' + args_str
+            curs.execute(query_str)
+            conn.commit()
+        except:
+            # Catch all errors and continue to keep server up and running
+            conn.rollback()
     return query_str
 
 def main_function():

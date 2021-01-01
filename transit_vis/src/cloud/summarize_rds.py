@@ -65,7 +65,11 @@ def convert_cursor_to_tabular(query_result_cursor):
     colnames = []
     for col in query_result_cursor.description:
         colnames.append(col.name)
-    daily_results.columns = colnames
+    # If not enough/no data was recorded on the day of interest this will return
+    if len(daily_results.columns) == 0:
+        return None
+    else:
+        daily_results.columns = colnames
     daily_results = daily_results.dropna()
     daily_results['tripid'] = daily_results['tripid'].astype(int)
     daily_results['vehicleid'] = daily_results['vehicleid'].astype(int)
@@ -224,6 +228,12 @@ def preprocess_trip_data(daily_results):
     daily_results.loc[:, 'avg_speed_m_s'] = round(
         daily_results.loc[:, 'avg_speed_m_s'])
 
+    # Remove rows where schedule deviation change is below -600 or above 300 (5mins)
+    daily_results = daily_results[daily_results['deviation_change_s'] >= -300]
+    daily_results = daily_results[daily_results['deviation_change_s'] <= 300]
+    daily_results.loc[:, 'deviation_change_s'] = round(
+        daily_results.loc[:, 'deviation_change_s'])
+
     # Merge scraped data with the gtfs data to get route ids
     gtfs_trips = pd.read_csv('./transit_vis/data/google_transit/trips.txt')
     gtfs_trips = gtfs_trips[['route_id', 'trip_id', 'trip_short_name']]
@@ -299,6 +309,7 @@ def assign_results_to_segments(kcm_routes, daily_results):
     feature_coords = []
     feature_lengths = []
     vis_ids = []
+    compkeys = []
     route_ids = []
     for feature in kcm_routes['features']:
         assert feature['geometry']['type'] == 'MultiLineString'
@@ -306,10 +317,12 @@ def assign_results_to_segments(kcm_routes, daily_results):
             feature_coords.append(coord_pair)
             feature_lengths.append(feature['properties']['SEGLENGTH'])
             vis_ids.append(feature['properties']['vis_id'])
+            compkeys.append(feature['properties']['COMPKEY'])
             route_ids.append(feature['properties']['join_ROUTE_ID'])
     segments = pd.DataFrame()
     segments['route_id'] = route_ids
     segments['vis_id'] = vis_ids
+    segments['compkey'] = compkeys
     segments['length'] = feature_lengths
     segments['lat'] = np.array(feature_coords)[:,0]
     segments['lon'] = np.array(feature_coords)[:,1]
@@ -362,6 +375,7 @@ def assign_results_to_segments(kcm_routes, daily_results):
         'route_short_name',
         # From joining nearest kcm segments
         'vis_id',
+        'compkey',
         'length',
         'lat_seg',
         'lon_seg']
@@ -473,11 +487,14 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, save_locally):
     print("Updating the GTFS files...")
     update_gtfs_route_info()
 
-    # Load 24hrs of scraped data
+    # Load 24hrs of scraped data, return if there is no data found, process otherwise
     print("Connecting to RDS...")
     conn = connect_to_rds()
     print("Querying data from RDS (~5mins if no limit specified)...")
-    daily_results, end_time = get_last_xdays_results(conn, num_days, rds_limit)
+    daily_results, start_time = get_last_xdays_results(conn, num_days, rds_limit)
+    if daily_results is None:
+        print(f"No results found for {start_time}")
+        return 0
     print("Processing queried RDS data...")
     daily_results = preprocess_trip_data(daily_results)
 
@@ -492,7 +509,7 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, save_locally):
     # Save the processed data for the user as .csv if specified
     if save_locally:
         outdir = "./transit_vis/data/to_upload"
-        outfile = datetime.utcfromtimestamp(end_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y')
+        outfile = datetime.utcfromtimestamp(start_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y')
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         print("Saving processed speeds to data folder...")
@@ -501,11 +518,12 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, save_locally):
     # Upload to dynamoDB
     print("Uploading aggregated segment data to dynamoDB...")
     table = connect_to_dynamo_table(dynamodb_table_name)
-    upload_length = upload_to_dynamo(table, daily_results, end_time)
+    upload_length = upload_to_dynamo(table, daily_results, start_time)
     return upload_length
 
 if __name__ == "__main__":
-    for x in reversed(range(1, 31)):
+    for x in range(28, 65):
+        print(x)
         NUM_SEGMENTS_UPDATED = summarize_rds(
             dynamodb_table_name='KCM_Bus_Routes_Production',
             num_days=x,
