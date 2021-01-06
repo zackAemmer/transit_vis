@@ -284,7 +284,7 @@ def get_nearest(src_points, candidates):
     # note: for the second closest points, you would take index 1, etc.
     closest_idx = indices[0]
     closest_dist = distances[0]
-    return (closest_idx, closest_dist)
+    return closest_idx
 
 def assign_results_to_segments(kcm_routes, daily_results):
     """Assigns each of the bus locations from the RDS to the closest segment.
@@ -311,40 +311,46 @@ def assign_results_to_segments(kcm_routes, daily_results):
     vis_ids = []
     compkeys = []
     route_ids = []
+    vis_ids = []
     for feature in kcm_routes['features']:
         assert feature['geometry']['type'] == 'MultiLineString'
         for coord_pair in feature['geometry']['coordinates'][0]:
             feature_coords.append(coord_pair)
             feature_lengths.append(feature['properties']['SEGLENGTH'])
-            vis_ids.append(feature['properties']['vis_id'])
             compkeys.append(feature['properties']['COMPKEY'])
             route_ids.append(feature['properties']['join_ROUTE_ID'])
+            vis_ids.append(feature['properties']['vis_id'])
     segments = pd.DataFrame()
     segments['route_id'] = route_ids
     segments['vis_id'] = vis_ids
     segments['compkey'] = compkeys
     segments['length'] = feature_lengths
-    segments['lat'] = np.array(feature_coords)[:,0]
-    segments['lon'] = np.array(feature_coords)[:,1]
+    segments['lat'] = np.array(feature_coords)[:,1] # Not sure why, but these are lon, lat in the geojson
+    segments['lon'] = np.array(feature_coords)[:,0] # Not sure why, but these are lon, lat in the geojson
 
     # Find closest segment that shares route for each tracked location
     to_upload = pd.DataFrame()
     route_list = pd.unique(daily_results['route_id'])
     untracked = []
     for route in route_list:
-        route_results = daily_results[daily_results['route_id']==route]
-        route_segments = segments[segments['route_id']==route].reset_index()
+        route_results = daily_results.loc[daily_results['route_id']==route]
+        route_segments = segments.loc[segments['route_id']==route].reset_index()
         if len(route_results) > 0 and len(route_segments) > 0:
-            result_idxs, result_dists = get_nearest(route_results[['lat', 'lon']], 
-                                                   route_segments[['lat', 'lon']])
-            route_results = route_results.reset_index().join(route_segments.loc[result_idxs,:].reset_index(), rsuffix='_seg')
+            result_idxs = get_nearest(route_results[['lat', 'lon']], route_segments[['lat', 'lon']])
+            result_segs = route_segments.iloc[result_idxs, :]
+            route_results = route_results.copy()
+            route_results['seg_lat'] = np.array(result_segs['lat'])
+            route_results['seg_lon'] = np.array(result_segs['lon'])
+            route_results['seg_length'] = np.array(result_segs['length'])
+            route_results['seg_compkey'] = np.array(result_segs['compkey'])
+            route_results['seg_route_id'] = np.array(result_segs['route_id'])
+            route_results['seg_vis_id'] = np.array(result_segs['vis_id'])
             to_upload = to_upload.append(route_results)
         else:
             untracked.append(route)
             result_idxs = -1
             result_dists = -1
     print(f"Routes {untracked} are either not tracked, or do not have an id in the KCM shapefile")
-
     # Clean up the results columns
     columns_to_keep = [
         # From the database and its offsets
@@ -374,11 +380,12 @@ def assign_results_to_segments(kcm_routes, daily_results):
         'trip_short_name',
         'route_short_name',
         # From joining nearest kcm segments
-        'vis_id',
-        'compkey',
-        'length',
-        'lat_seg',
-        'lon_seg']
+        'seg_compkey',
+        'seg_length',
+        'seg_route_id',
+        'seg_vis_id',
+        'seg_lat',
+        'seg_lon']
     to_upload = to_upload[columns_to_keep]
     return to_upload
 
@@ -418,15 +425,12 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
             route ids, and their average speeds.
         end_time: An epoch time integer that represents the date to assign the
             values to.
-
-    Returns:
-        The length of the to_upload argument.
     """
     # Get formatted date to assign to speed data
     collection_date = datetime.utcfromtimestamp(end_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y')
-    # Aggregate the observed bus speeds by their ids
-    to_upload = to_upload[['vis_id', 'route_id', 'avg_speed_m_s', 'deviation_change_s']]
-    to_upload = to_upload.groupby(['vis_id', 'route_id']).agg(['mean', 'var', 'count']).reset_index()
+    # Aggregate the observed bus speeds by their nearest segment ids
+    to_upload = to_upload[['seg_vis_id', 'seg_route_id', 'avg_speed_m_s', 'deviation_change_s']]
+    to_upload = to_upload.groupby(['seg_vis_id', 'seg_route_id']).agg(['mean', 'var', 'count']).reset_index()
     # Round all calculated means and variances
     to_upload[('avg_speed_m_s', 'mean')] = round(to_upload[('avg_speed_m_s', 'mean')], 1)
     to_upload[('avg_speed_m_s', 'var')] = round(to_upload[('avg_speed_m_s', 'var')], 1)
@@ -437,8 +441,8 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
     for segment in to_upload:
         dynamodb_table.update_item(
             Key={
-                'vis_id': segment[('vis_id', '')],
-                'route_id': segment[('route_id', '')]},
+                'vis_id': segment[('seg_vis_id', '')],
+                'route_id': segment[('seg_route_id', '')]},
             UpdateExpression="SET record_date=list_append(if_not_exists(record_date, :empty_list), :date_val)," \
                 "mean_speed_m_s=list_append(if_not_exists(mean_speed_m_s, :empty_list), :mean_speed_val)," \
                 "var_speed_m_s=list_append(if_not_exists(var_speed_m_s, :empty_list), :var_speed_val)," \
@@ -453,9 +457,9 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
                 ':var_deviation_val': [str(segment[('deviation_change_s', 'var')])],
                 ':size_val': [str(segment[('avg_speed_m_s', 'count')])],
                 ':empty_list': []})
-    return len(to_upload)
+    return
 
-def summarize_rds(dynamodb_table_name, num_days, rds_limit, save_locally):
+def summarize_rds(dynamodb_table_name, num_days, rds_limit, update_gtfs, save_locally, upload):
     """Queries 24hrs of data from RDS, calculates speeds, and uploads them.
 
     Runs daily to take 24hrs worth of data stored in the data warehouse
@@ -478,14 +482,17 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, save_locally):
             queries. Set to 0 for no limit.
         save_locally: Boolean specifying whether to save the processed data to
             a folder on the user's machine.
+        upload: Boolean specifying whether to upload the processed data to the
+            dynamodb table.
 
     Returns:
         An integer of the number of segments that were updated in the
         database.
     """
     # Update the current gtfs trip-route info from King County Metro
-    print("Updating the GTFS files...")
-    update_gtfs_route_info()
+    if update_gtfs:
+        print("Updating the GTFS files...")
+        update_gtfs_route_info()
 
     # Load 24hrs of scraped data, return if there is no data found, process otherwise
     print("Connecting to RDS...")
@@ -499,7 +506,7 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, save_locally):
     daily_results = preprocess_trip_data(daily_results)
 
     # Load the route segments shapefile
-    with open('./transit_vis/data/kcm_routes.geojson') as shapefile:
+    with open('./transit_vis/data/streets_routes_0002buffer.geojson') as shapefile:
         kcm_routes = json.load(shapefile)
 
     # Find the closest segment w/matching route for each speed in daily results
@@ -516,17 +523,21 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, save_locally):
         daily_results.to_csv(f"{outdir}/{outfile}.csv", index=False)
 
     # Upload to dynamoDB
-    print("Uploading aggregated segment data to dynamoDB...")
-    table = connect_to_dynamo_table(dynamodb_table_name)
-    upload_length = upload_to_dynamo(table, daily_results, start_time)
-    return upload_length
+    if upload:
+        print("Uploading aggregated segment data to dynamoDB...")
+        table = connect_to_dynamo_table(dynamodb_table_name)
+        upload_to_dynamo(table, daily_results, start_time)
+
+    return len(daily_results)
 
 if __name__ == "__main__":
-    for x in range(28, 65):
-        print(x)
+    for x in range(16, 95):
+        print(f"Day {x}")
         NUM_SEGMENTS_UPDATED = summarize_rds(
             dynamodb_table_name='KCM_Bus_Routes_Production',
             num_days=x,
             rds_limit=0,
-            save_locally=True)
-        print(f"Number of segments updated: {NUM_SEGMENTS_UPDATED}")
+            update_gtfs=False,
+            save_locally=True,
+            upload=False)
+        print(f"Number of tracks: {NUM_SEGMENTS_UPDATED}")

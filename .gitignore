@@ -10,7 +10,11 @@ transit_vis/src/local/__pycache__/
 
 transit_vis/data/google_transit.zip
 transit_vis/data/google_transit/*
-
+transit_vis/data/all_data.csv
 transit_vis/data/to_upload/*
+transit_vis/data/streets_0002buffer_tmp.geojson
 
 .ipynb_checkpoints/
+
+local_sampled_map.html
+
