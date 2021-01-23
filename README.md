@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/7fa6c3e9-4631-46f1-b0ce-284d63a032be/deploy-status)](https://app.netlify.com/sites/boring-almeida-a309db/deploys)
+
 ## Transit Vis
 
 ### Background
