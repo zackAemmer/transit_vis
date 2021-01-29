@@ -76,55 +76,51 @@ def create_dynamo_table(dynamodb_resource, table_name):
     table = dynamodb_resource.create_table(
         TableName=table_name,
         KeySchema=[
-            {'AttributeName': 'vis_id', 'KeyType': 'HASH'},
-            {'AttributeName': 'route_id', 'KeyType': 'RANGE'}],
+            {'AttributeName': 'compkey', 'KeyType': 'HASH'}
+        ],
         AttributeDefinitions=[
-            {'AttributeName': 'vis_id', 'AttributeType': 'N'},
-            {'AttributeName': 'route_id', 'AttributeType': 'N'}],
+            {'AttributeName': 'compkey', 'AttributeType': 'N'}
+        ],
         ProvisionedThroughput={
             'ReadCapacityUnits': 20,
-            'WriteCapacityUnits': 20})
+            'WriteCapacityUnits': 20}
+    )
     # Wait until the table exists.
     table.meta.client.get_waiter('table_exists').wait(TableName=table_name)
     return table
 
-def upload_segments_to_dynamo(dynamodb_resource, table_name, kcm_routes):
+def upload_segments_to_dynamo(dynamodb_resource, table_name, segments):
     """Uploads the segments in a geojson file to a specified dynamodb table.
 
     Goes thorugh each of the features in a geojson file, and creates a new item
     for that feature on dynamodb. The key is set based on route id and code.
-    A field is created for average speed and initialized to 0. An array field
-    is created for past speeds and initialized empty. When summarize_rds.py is
-    run, it will append the average daily speed to the historic speeds list and
-    set the new average speed to that day's speed.
+    Fields for variables of interest are initialized to empty arrays.
 
     Args:
         dynamodb_resource: A boto3 Resource pointing to the AWS account on which
             the table should be created.
         table_name: A string containing the name for the segments table.
-        kcm_routes: A geojson object containing the features that should be
+        segments: A geojson object containing the features that should be
             uploaded. Although this object also contains all of the geometry,
-            only the route and segment ids will be uploaded.
+            only the ids will be uploaded.
 
     Returns:
         1 when the features are finished uploading to the table.
     """
     table = dynamodb_resource.Table(table_name)
     with table.batch_writer() as batch:
-        for route in kcm_routes['features']:
+        for segment in segments['features']:
             batch.put_item(
                 Item={
-                    'vis_id': route['properties']['vis_id'],
-                    'route_id': route['properties']['join_ROUTE_ID'],
-                    'compkey': route['properties']['COMPKEY'],
-                    'local_express_code': route['properties']['join_LOCAL_EXPR'],
-                    'route_num': route['properties']['join_ROUTE_NUM'],
-                    'record_date': [],
-                    'mean_speed_m_s': [],
+                    'compkey': segment['properties']['COMPKEY'],
+                    'med_speed_m_s': [],
                     'var_speed_m_s': [],
-                    'mean_deviation_s': [],
+                    'pct_speed_m_s': [],
+                    'med_deviation_s': [],
                     'var_deviation_s': [],
-                    'sample_size': []})
+                    'num_traversals': [],
+                    'med_travel_time_s': []
+                })
     return 1
 
 def initialize_dynamodb(geojson_name, dynamodb_table_name):
@@ -136,8 +132,7 @@ def initialize_dynamodb(geojson_name, dynamodb_table_name):
     https://www5.kingcounty.gov/sdc/Metadata.aspx?Layer=transitroute.
 
     Args:
-        geojson_name: Path to the geojson file that is to be uploaded. Must have
-            [properties][ROUTE_ID] and [properties][LOCAL_EXPR] elements. Do not
+        geojson_name: Path to the geojson file that is to be uploaded. Do not
             include file type ending (.geojson etc.).
         table_name: A string containing the name for the segments table.
 
@@ -146,10 +141,10 @@ def initialize_dynamodb(geojson_name, dynamodb_table_name):
         database.
     """
     with open(f"{geojson_name}.geojson", 'r') as shapefile:
-        kcm_routes = json.load(shapefile)
+        segments = json.load(shapefile)
 
     # Turn all float values (coordinates mostly) into strings in the geojson
-    kcm_routes = replace_floats(kcm_routes)
+    segments = replace_floats(segments)
 
     # Upload the modified segments to a newly created dynamodb table
     print("Connecting to Dynamodb...")
@@ -160,13 +155,13 @@ def initialize_dynamodb(geojson_name, dynamodb_table_name):
     upload_segments_to_dynamo(
         dynamodb_resource,
         dynamodb_table_name,
-        kcm_routes)
+        segments)
     # Return the number of features that are in the kcm data
-    return len(kcm_routes['features'])
+    return len(segments['features'])
 
 if __name__ == "__main__":
     # Main program starts here
     NUM_FEATURES_UPLOADED = initialize_dynamodb(
-        './transit_vis/data/kcm_routes',
-        'KCM_Bus_Routes_Production')
+        './transit_vis/data/streets_0002buffer',
+        'KCM_Bus_Routes')
     print(f"{NUM_FEATURES_UPLOADED} features in data uploaded to dynamodb")

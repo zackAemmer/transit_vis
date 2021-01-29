@@ -174,8 +174,8 @@ def preprocess_trip_data(daily_results):
     based on the distance traveled and the time between those locations. Speeds
     that are below 0 m/s, or above 30 m/s are assumed to be GPS multipathing or
     other recording errors and are removed. Deviation change indicates an
-    unexpected delay manifested as a change in schedule deviation. Stop delay is
-    true if the nextstop attribute changed from the previous location.
+    unexpected delay. Stop delay is true if the nextstop attribute changed from
+    the previous location.
 
     Args:
         daily_results: A Pandas Dataframe object containing bus location, time,
@@ -183,8 +183,7 @@ def preprocess_trip_data(daily_results):
 
     Returns:
         A Pandas Dataframe object containing the cleaned set of results with an
-        additional column named 'avg_speed_m_s', another column named 
-        'deviation_change_s' and another named 'at_stop'.
+        additional columns for calculated variables.
     """
     # Remove duplicate trip locations
     daily_results.drop_duplicates(subset=['tripid', 'locationtime'], inplace=True)
@@ -211,7 +210,7 @@ def preprocess_trip_data(daily_results):
         - daily_results['prev_tripdistance']
     daily_results.loc[:, 'time_diff'] = daily_results['locationtime'] \
         - daily_results['prev_locationtime']
-    daily_results.loc[:, 'avg_speed_m_s'] = daily_results['dist_diff'] \
+    daily_results.loc[:, 'speed_m_s'] = daily_results['dist_diff'] \
         / daily_results['time_diff']
 
     # Calculate change in schedule deviation
@@ -223,10 +222,10 @@ def preprocess_trip_data(daily_results):
     daily_results.loc[daily_results['nextstop'] == daily_results['prev_stopid'], 'at_stop'] = False
 
     # Remove rows where speed is below 0 or above 30 and round
-    daily_results = daily_results[daily_results['avg_speed_m_s'] >= 0]
-    daily_results = daily_results[daily_results['avg_speed_m_s'] <= 30]
-    daily_results.loc[:, 'avg_speed_m_s'] = round(
-        daily_results.loc[:, 'avg_speed_m_s'])
+    daily_results = daily_results[daily_results['speed_m_s'] >= 0]
+    daily_results = daily_results[daily_results['speed_m_s'] <= 30]
+    daily_results.loc[:, 'speed_m_s'] = round(
+        daily_results.loc[:, 'speed_m_s'])
 
     # Remove rows where schedule deviation change is below -600 or above 300 (5mins)
     daily_results = daily_results[daily_results['deviation_change_s'] >= -300]
@@ -308,7 +307,6 @@ def assign_results_to_segments(kcm_routes, daily_results):
     # vis_id is unique id, route_id helps narrow down when matching segments
     feature_coords = []
     feature_lengths = []
-    vis_ids = []
     compkeys = []
     route_ids = []
     vis_ids = []
@@ -333,12 +331,11 @@ def assign_results_to_segments(kcm_routes, daily_results):
     route_list = pd.unique(daily_results['route_id'])
     untracked = []
     for route in route_list:
-        route_results = daily_results.loc[daily_results['route_id']==route]
+        route_results = daily_results.loc[daily_results['route_id']==route].copy()
         route_segments = segments.loc[segments['route_id']==route].reset_index()
         if len(route_results) > 0 and len(route_segments) > 0:
             result_idxs = get_nearest(route_results[['lat', 'lon']], route_segments[['lat', 'lon']])
             result_segs = route_segments.iloc[result_idxs, :]
-            route_results = route_results.copy()
             route_results['seg_lat'] = np.array(result_segs['lat'])
             route_results['seg_lon'] = np.array(result_segs['lon'])
             route_results['seg_length'] = np.array(result_segs['length'])
@@ -372,7 +369,7 @@ def assign_results_to_segments(kcm_routes, daily_results):
         # Calculated from database values
         'dist_diff',
         'time_diff',
-        'avg_speed_m_s',
+        'speed_m_s',
         'deviation_change_s',
         'at_stop',
         # From joining GTFS
@@ -381,7 +378,7 @@ def assign_results_to_segments(kcm_routes, daily_results):
         'route_short_name',
         # From joining nearest kcm segments
         'seg_compkey',
-        'seg_length',
+        'seg_length', # Units on this are feet
         'seg_route_id',
         'seg_vis_id',
         'seg_lat',
@@ -410,11 +407,17 @@ def connect_to_dynamo_table(table_name):
     table = dynamodb.Table(table_name)
     return table
 
+def percentile(n):
+    def percentile_(x):
+        return np.percentile(x, n)
+    percentile_.__name__ = 'pct_%s' % n
+    return percentile_
+
 def upload_to_dynamo(dynamodb_table, to_upload, end_time):
     """Uploads the speeds gathered and processed from the RDS to dynamodb.
 
-    Groups all bus speed observations by route/segment ids and averages the
-    observed speeds. Uploads the results to dynamodb; replaces avg_speed_m_s
+    Groups all bus speed observations by route/segment ids and calculates additional
+    statistics. Uploads the results to dynamodb; replaces speed_m_s
     with the latest value, and appends to historic_speeds which keeps track of
     past average daily speeds for each segment.
 
@@ -422,40 +425,42 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
         dynamodb_table: A boto3 Table pointing to a dynamodb table that has been
             initialized to contain the same segments as to_upload.
         to_upload: A Pandas Dataframe to be uploaded to dynamodb containing
-            route ids, and their average speeds.
+            seg ids, and their average speeds.
         end_time: An epoch time integer that represents the date to assign the
             values to.
     """
     # Get formatted date to assign to speed data
     collection_date = datetime.utcfromtimestamp(end_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y')
+
     # Aggregate the observed bus speeds by their nearest segment ids
-    to_upload = to_upload[['seg_vis_id', 'seg_route_id', 'avg_speed_m_s', 'deviation_change_s']]
-    to_upload = to_upload.groupby(['seg_vis_id', 'seg_route_id']).agg(['mean', 'var', 'count']).reset_index()
-    # Round all calculated means and variances
-    to_upload[('avg_speed_m_s', 'mean')] = round(to_upload[('avg_speed_m_s', 'mean')], 1)
-    to_upload[('avg_speed_m_s', 'var')] = round(to_upload[('avg_speed_m_s', 'var')], 1)
-    to_upload[('deviation_change_s', 'mean')] = round(to_upload[('deviation_change_s', 'mean')], 1)
-    to_upload[('deviation_change_s', 'var')] = round(to_upload[('deviation_change_s', 'var')], 1)
+    to_upload = to_upload[['seg_compkey', 'seg_route_id', 'speed_m_s', 'deviation_change_s', 'seg_length']].copy()
+    to_upload.dropna(inplace=True)
+    to_upload['travel_time_s'] = (to_upload['seg_length'] * .3048) / to_upload['speed_m_s'] # Feet to meters
+    to_upload = to_upload.groupby(['seg_compkey']).agg(['median', 'var', 'count', percentile(95)]).reset_index()
+    to_upload = to_upload.loc[to_upload[('seg_route_id', 'count')] > 1]
     to_upload = to_upload.to_dict(orient='records')
+
     # Update each route/segment id in the dynamodb with its new value
     for segment in to_upload:
         dynamodb_table.update_item(
             Key={
-                'vis_id': segment[('seg_vis_id', '')],
-                'route_id': segment[('seg_route_id', '')]},
-            UpdateExpression="SET record_date=list_append(if_not_exists(record_date, :empty_list), :date_val)," \
-                "mean_speed_m_s=list_append(if_not_exists(mean_speed_m_s, :empty_list), :mean_speed_val)," \
+                'compkey': segment[('seg_compkey', '')]
+            },
+            UpdateExpression="SET med_speed_m_s=list_append(if_not_exists(med_speed_m_s, :empty_list), :med_speed_val)," \
                 "var_speed_m_s=list_append(if_not_exists(var_speed_m_s, :empty_list), :var_speed_val)," \
-                "mean_deviation_s=list_append(if_not_exists(mean_deviation_s, :empty_list), :mean_deviation_val)," \
+                "med_deviation_s=list_append(if_not_exists(med_deviation_s, :empty_list), :med_deviation_val)," \
                 "var_deviation_s=list_append(if_not_exists(var_deviation_s, :empty_list), :var_deviation_val)," \
-                "sample_size=list_append(if_not_exists(sample_size, :empty_list), :size_val)",
+                "num_traversals=list_append(if_not_exists(num_traversals, :empty_list), :count_val)," \
+                "travel_time_s=list_append(if_not_exists(travel_time_s, :empty_list), :med_travel_time_val)," \
+                "pct_speed_m_s=list_append(if_not_exists(pct_speed_m_s, :empty_list), :pct_speed_val)",
             ExpressionAttributeValues={
-                ':date_val': [str(collection_date)],
-                ':mean_speed_val': [str(segment[('avg_speed_m_s', 'mean')])],
-                ':var_speed_val': [str(segment[('avg_speed_m_s', 'var')])],
-                ':mean_deviation_val': [str(segment[('deviation_change_s', 'mean')])],
+                ':med_speed_val': [str(segment[('speed_m_s', 'median')])],
+                ':var_speed_val': [str(segment[('speed_m_s', 'var')])],
+                ':med_deviation_val': [str(segment[('deviation_change_s', 'median')])],
                 ':var_deviation_val': [str(segment[('deviation_change_s', 'var')])],
-                ':size_val': [str(segment[('avg_speed_m_s', 'count')])],
+                ':count_val': [str(segment[('speed_m_s', 'count')])],
+                ':pct_speed_val': [str(segment[('speed_m_s', 'pct_95')])],
+                ':med_travel_time_val': [str(segment[('travel_time_s', 'median')])],
                 ':empty_list': []})
     return
 
@@ -531,13 +536,13 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, update_gtfs, save_lo
     return len(daily_results)
 
 if __name__ == "__main__":
-    for x in range(16, 95):
+    for x in range(1, 2):
         print(f"Day {x}")
         NUM_SEGMENTS_UPDATED = summarize_rds(
-            dynamodb_table_name='KCM_Bus_Routes_Production',
+            dynamodb_table_name='KCM_Bus_Routes',
             num_days=x,
             rds_limit=0,
             update_gtfs=False,
-            save_locally=True,
-            upload=False)
+            save_locally=False,
+            upload=True)
         print(f"Number of tracks: {NUM_SEGMENTS_UPDATED}")
