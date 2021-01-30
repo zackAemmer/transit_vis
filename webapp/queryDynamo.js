@@ -1,13 +1,12 @@
-var REGION = process.env.REGION;
-var ACCESS_ID = process.env.ACCESS_ID;
-var ACCESS_KEY = process.env.ACCESS_KEY;
-
 AWS.config.update({
-  region: REGION,
-  endpoint: 'dynamodb.us-east-2.amazonaws.com',
-  accessKeyId: ACCESS_ID,
-  secretAccessKey: ACCESS_KEY
-});
+    region: 'us-east-1',
+    endpoint: 'dynamodb.us-eas-2.amazonaws.com',
+    credentials: new AWS.CognitoIdentityCredentials({
+      AccountId: '1234567890', // your AWS account ID
+      RoleArn: 'arn:aws:iam::476220055377:role/Cognito_Transit_VisUnauth_Role',
+      IdentityPoolId: 'us-east-1:ddba1821-963b-4ed3-9cd9-dd9fd7693bd4'
+    })
+  });
 
 var docClient = new AWS.DynamoDB.DocumentClient();
 var params = {
