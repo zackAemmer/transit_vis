@@ -2,7 +2,7 @@ AWS.config.update({
     region: 'us-east-1',
     endpoint: 'dynamodb.us-eas-2.amazonaws.com',
     credentials: new AWS.CognitoIdentityCredentials({
-      AccountId: '1234567890', // your AWS account ID
+      AccountId: '476220055377',
       RoleArn: 'arn:aws:iam::476220055377:role/Cognito_Transit_VisUnauth_Role',
       IdentityPoolId: 'us-east-1:ddba1821-963b-4ed3-9cd9-dd9fd7693bd4'
     })
