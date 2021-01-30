@@ -1,12 +1,8 @@
 var map = L.map('map').setView([47.606209, -122.332069], 11);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
-
-L.marker([47.606209, -122.332069]).addTo(map)
-    .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
-    .openPopup();
 
 var styleFunction = function(feature) {
   if (feature.properties.TRANCLASS == 3) {
@@ -24,7 +20,8 @@ var styleFunction = function(feature) {
   }
 };
 
+
+
 L.geoJSON(streets, {
   style: styleFunction
-}
-).addTo(map);
+}).addTo(map);
