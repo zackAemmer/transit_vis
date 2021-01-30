@@ -1,29 +1,15 @@
-AWS.config.update({
-    region: 'us-east-1',
-    endpoint: 'dynamodb.us-eas-2.amazonaws.com',
-    credentials: new AWS.CognitoIdentityCredentials({
-      AccountId: '476220055377',
-      RoleArn: 'arn:aws:iam::476220055377:role/Cognito_Transit_VisUnauth_Role',
-      IdentityPoolId: 'us-east-1:ddba1821-963b-4ed3-9cd9-dd9fd7693bd4'
-    })
-  });
-
+// Connect to AWS Cognito to get read-only dynamodb credentials
+AWS.config.region = "us-east-2";
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+    IdentityPoolId: "us-east-2:4e0b1ce8-5ab0-4679-a93f-88c91c151677"
+});
 var docClient = new AWS.DynamoDB.DocumentClient();
-var params = {
-    TableName: "KCM_Bus_Routes",
-    ProjectionExpression: "compkey, med_speed_m_s",
-};
-var segment_ary = [];
-var speed_ary = [];
 
-console.log("Starting scan");
-$("#statustext").text("Scanning..");
-
-docClient.scan(params, onScan);
-
+// Function that repeatedly scans all records in dynamo 1MB per scan
 function onScan(err, data) {
+console.log("Starting scan");
     if (err) {
-        console.log(err);
+        console.log("Error occurred");
     } else {
         data.Items.forEach(function(segment) {
             segment_ary.push(segment.compkey);
@@ -38,4 +24,14 @@ function onScan(err, data) {
             console.log(segment_ary);
         }
     }
-}
+};
+
+// Main script starts here
+var segment_ary = [];
+var speed_ary = [];
+var params = {
+    TableName: "KCM_Bus_Routes",
+    ProjectionExpression: "compkey, med_speed_m_s",
+};
+$("#statustext").text("Scanning..");
+docClient.scan(params, onScan);
