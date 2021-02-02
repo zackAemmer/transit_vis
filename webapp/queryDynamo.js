@@ -21,9 +21,8 @@ console.log("Starting scan");
             docClient.scan(params, onScan);
         } else {
             console.log("Finished scanning");
-            console.log(segment_ary);
-        }
-    }
+        };
+    };
 };
 
 // Main script starts here
@@ -33,5 +32,4 @@ var params = {
     TableName: "KCM_Bus_Routes",
     ProjectionExpression: "compkey, med_speed_m_s",
 };
-$("#statustext").text("Scanning..");
 docClient.scan(params, onScan);

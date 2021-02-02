@@ -5,7 +5,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 var styleFunction = function(feature) {
-  if (feature.properties.TRANCLASS == 3) {
+  if (feature.properties.SPEED <= 8) {
     return {
       "color": "#ff7800",
       "weight": 5,
@@ -17,10 +17,8 @@ var styleFunction = function(feature) {
       "weight": 5,
       "opacity": 0.65
     };
-  }
+  };
 };
-
-
 
 L.geoJSON(streets, {
   style: styleFunction
