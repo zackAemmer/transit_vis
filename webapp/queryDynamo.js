@@ -21,6 +21,14 @@ console.log("Starting scan");
             docClient.scan(params, onScan);
         } else {
             console.log("Finished scanning");
+            // Assign the downloaded metrics to street segments
+            for (i=0; i<streets.features.length; i++) {
+                var COMPKEY = streets.features[i].properties.COMPKEY;
+                var idx = segment_ary.indexOf(COMPKEY);
+                streets.features[i].properties.SPEED = speed_ary[idx][0];
+            };
+            // Add the geoJson to the map
+            drawGeojson(streets);
         };
     };
 };
@@ -32,4 +40,5 @@ var params = {
     TableName: "KCM_Bus_Routes",
     ProjectionExpression: "compkey, med_speed_m_s",
 };
+
 docClient.scan(params, onScan);
