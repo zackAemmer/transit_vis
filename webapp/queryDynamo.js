@@ -25,7 +25,7 @@ console.log("Starting scan");
             for (i=0; i<streets.features.length; i++) {
                 var COMPKEY = streets.features[i].properties.COMPKEY;
                 var idx = segment_ary.indexOf(COMPKEY);
-                streets.features[i].properties.SPEED = speed_ary[idx][0];
+                streets.features[i].properties.SPEED = speed_ary[idx].pop(); // newest speeds at end of list
             };
             // Add the geoJson to the map
             drawGeojson(streets);

@@ -197,6 +197,10 @@ def preprocess_trip_data(daily_results):
     daily_results.loc[daily_results.tripid != daily_results.prev_tripid, 'tripid'] = None
     daily_results.dropna(inplace=True)
 
+    # If no rows are left, return empty dataframe
+    if daily_results.size == 0:
+        return daily_results
+
     # Calculate average speed between each location bus is tracked at
     daily_results.loc[:, 'dist_diff'] = daily_results['tripdistance'] \
         - daily_results['prev_tripdistance']
@@ -427,7 +431,6 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
     # Aggregate the observed bus speeds by their nearest segment ids
     to_upload = to_upload[['seg_compkey', 'seg_route_id', 'speed_m_s', 'deviation_change_s', 'seg_length']].copy()
     to_upload.dropna(inplace=True)
-    to_upload['travel_time_s'] = (to_upload['seg_length'] * .3048) / to_upload['speed_m_s'] # Feet to meters
     to_upload = to_upload.groupby(['seg_compkey']).agg(['median', 'var', 'count', percentile(95)]).reset_index()
     to_upload = to_upload.loc[to_upload[('seg_route_id', 'count')] > 1]
     to_upload = to_upload.to_dict(orient='records')
@@ -443,7 +446,6 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
                 "med_deviation_s=list_append(if_not_exists(med_deviation_s, :empty_list), :med_deviation_val)," \
                 "var_deviation_s=list_append(if_not_exists(var_deviation_s, :empty_list), :var_deviation_val)," \
                 "num_traversals=list_append(if_not_exists(num_traversals, :empty_list), :count_val)," \
-                "travel_time_s=list_append(if_not_exists(travel_time_s, :empty_list), :med_travel_time_val)," \
                 "pct_speed_m_s=list_append(if_not_exists(pct_speed_m_s, :empty_list), :pct_speed_val)",
             ExpressionAttributeValues={
                 ':med_speed_val': [str(segment[('speed_m_s', 'median')])],
@@ -452,8 +454,16 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
                 ':var_deviation_val': [str(segment[('deviation_change_s', 'var')])],
                 ':count_val': [str(segment[('speed_m_s', 'count')])],
                 ':pct_speed_val': [str(segment[('speed_m_s', 'pct_95')])],
-                ':med_travel_time_val': [str(segment[('travel_time_s', 'median')])],
                 ':empty_list': []})
+    # Remove the first item in the list for the attribute of each updated segment
+    for segment in to_upload:
+        dynamodb_table.update_item(
+            Key={
+                'compkey': segment[('seg_compkey', '')]
+            },
+            UpdateExpression="REMOVE med_speed_m_s[0], var_speed_m_s[0]," \
+                "med_deviation_s[0], var_deviation_s[0]," \
+                "num_traversals[0], pct_speed_m_s[0]")
     return
 
 def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, upload):
@@ -496,7 +506,7 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
     all_daily_results = []
     end_time = round(datetime.now().timestamp())
     for i in range(0, split_data):
-        start_time = end_time - (24*60*60/split_data)
+        start_time = int(round(end_time - (24*60*60/split_data), 0))
         daily_results = get_results_by_time(conn, start_time, end_time, rds_limit)
         if daily_results is None:
             print(f"No results found for {start_time}")
@@ -536,9 +546,9 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
 if __name__ == "__main__":
     NUM_SEGMENTS_UPDATED = summarize_rds(
         dynamodb_table_name='KCM_Bus_Routes',
-        rds_limit=1000,
+        rds_limit=0,
         split_data=3,
-        update_gtfs=False,
+        update_gtfs=True,
         save_locally=False,
-        upload=False)
+        upload=True)
     print(f"Number of tracks: {NUM_SEGMENTS_UPDATED}")
