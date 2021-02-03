@@ -98,38 +98,30 @@ def connect_to_rds():
         password=cfg.PWD)
     return conn
 
-def get_last_xdays_results(conn, num_days_back, rds_limit):
+def get_results_by_time(conn, start_time, end_time, rds_limit):
     """Queries the last x days worth of data from the RDS data warehouse.
 
-    Uses the database connection to execute a query for the last x days of
+    Uses the database connection to execute a query for the specified times of
     bus coordinates stored in the RDS data warehouse. The RDS data must have a
     column for collected time (in epoch format) which is used to determine the
-    time. The query is made based on the current system time, so it will count
-    x days back from the present on the current system. All time comparisons
-    between the RDS and the system are done in epoch time, so there should be no
-    concern for time zone differences if running this function from an EC2
-    instance.
+    time. All time comparisons between the RDS and the system are done in epoch
+    time, so there should be no concern for time zone differences if running this
+    function from an EC2 instance.
 
     Args:
         conn: A Psycopg Connection object for the RDS data warehouse.
-        num_days_back: An integer specifying how many days back to start the
-            24hr query.
+        start_time: An integer specifying the start of the range of times that
+            should be collected from the database.
+        end_time: An integer specifying the end of the range of times that should
+            be collected from the database.
         rds_limit: An integer specifying the maximum number of rows to query.
             Useful for debugging and checking output before making larger
             queries. Set to 0 for no limit.
 
     Returns:
         A Pandas Dataframe object containing the results in the database for the
-        last x day period, and an integer for epoch time of the query end.
+        last x day period.
     """
-    # Query the specified number of days back from current time
-    end_time = round(datetime.now().timestamp())
-    start_time = end_time - (24*60*60)
-    i = 1
-    while i < num_days_back:
-        end_time = start_time
-        start_time = end_time - (24*60*60)
-        i += 1
     # Database has index on locationtime attribute
     if rds_limit > 0:
         query_text = f"SELECT * FROM active_trips_study WHERE locationtime " \
@@ -140,7 +132,7 @@ def get_last_xdays_results(conn, num_days_back, rds_limit):
     with conn.cursor() as curs:
         curs.execute(query_text)
         daily_results = convert_cursor_to_tabular(curs)
-    return daily_results, start_time
+    return daily_results
 
 def update_gtfs_route_info():
     """Downloads the latest trip-route conversions from the KCM GTFS feed.
@@ -227,7 +219,7 @@ def preprocess_trip_data(daily_results):
     daily_results.loc[:, 'speed_m_s'] = round(
         daily_results.loc[:, 'speed_m_s'])
 
-    # Remove rows where schedule deviation change is below -600 or above 300 (5mins)
+    # Remove rows where schedule deviation change is below -300 or above 300 (5mins)
     daily_results = daily_results[daily_results['deviation_change_s'] >= -300]
     daily_results = daily_results[daily_results['deviation_change_s'] <= 300]
     daily_results.loc[:, 'deviation_change_s'] = round(
@@ -464,7 +456,7 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
                 ':empty_list': []})
     return
 
-def summarize_rds(dynamodb_table_name, num_days, rds_limit, update_gtfs, save_locally, upload):
+def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, upload):
     """Queries 24hrs of data from RDS, calculates speeds, and uploads them.
 
     Runs daily to take 24hrs worth of data stored in the data warehouse
@@ -478,13 +470,11 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, update_gtfs, save_lo
     Args:
         dynamodb_table_name: The name of the table containing the segments that
             speeds will be matched and uploaded to.
-        num_days: How many days back data should be queried from RDS to be added
-            to the dynamodb database. Helpful for quickly populating dynamodb
-            with speeds when first setting it up. Set to 1 to use last 24hrs of
-            data.
         rds_limit: An integer specifying the maximum number of rows to query.
             Useful for debugging and checking output before making larger
             queries. Set to 0 for no limit.
+        split_data: An integer specifying how many blocks to split each 24hr query
+            into.
         save_locally: Boolean specifying whether to save the processed data to
             a folder on the user's machine.
         upload: Boolean specifying whether to upload the processed data to the
@@ -499,16 +489,24 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, update_gtfs, save_lo
         print("Updating the GTFS files...")
         update_gtfs_route_info()
 
-    # Load 24hrs of scraped data, return if there is no data found, process otherwise
+    # Load scraped data, return if there is no data found, process otherwise
     print("Connecting to RDS...")
     conn = connect_to_rds()
     print("Querying data from RDS (~5mins if no limit specified)...")
-    daily_results, start_time = get_last_xdays_results(conn, num_days, rds_limit)
-    if daily_results is None:
-        print(f"No results found for {start_time}")
-        return 0
-    print("Processing queried RDS data...")
-    daily_results = preprocess_trip_data(daily_results)
+    all_daily_results = []
+    end_time = round(datetime.now().timestamp())
+    for i in range(0, split_data):
+        start_time = end_time - (24*60*60/split_data)
+        daily_results = get_results_by_time(conn, start_time, end_time, rds_limit)
+        if daily_results is None:
+            print(f"No results found for {start_time}")
+            return 0
+        print(f"Processing queried RDS data...{i+1}/{split_data}")
+        daily_results = preprocess_trip_data(daily_results)
+        all_daily_results.append(daily_results)
+        del daily_results
+        end_time = start_time
+    daily_results = pd.concat(all_daily_results)
 
     # Load the route segments shapefile
     with open('./transit_vis/data/streets_routes_0002buffer.geojson') as shapefile:
@@ -536,13 +534,11 @@ def summarize_rds(dynamodb_table_name, num_days, rds_limit, update_gtfs, save_lo
     return len(daily_results)
 
 if __name__ == "__main__":
-    for x in range(1, 2):
-        print(f"Day {x}")
-        NUM_SEGMENTS_UPDATED = summarize_rds(
-            dynamodb_table_name='KCM_Bus_Routes',
-            num_days=x,
-            rds_limit=0,
-            update_gtfs=False,
-            save_locally=False,
-            upload=True)
-        print(f"Number of tracks: {NUM_SEGMENTS_UPDATED}")
+    NUM_SEGMENTS_UPDATED = summarize_rds(
+        dynamodb_table_name='KCM_Bus_Routes',
+        rds_limit=1000,
+        split_data=3,
+        update_gtfs=False,
+        save_locally=False,
+        upload=False)
+    print(f"Number of tracks: {NUM_SEGMENTS_UPDATED}")
