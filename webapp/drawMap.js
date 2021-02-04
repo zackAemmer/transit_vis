@@ -34,7 +34,7 @@ info.onAdd = function (map) {
 };
 info.update = function (properties) {
     this._div.innerHTML = '<h4>Median Daily Speed</h4>' +
-      (properties ? 'Compkey:' + properties.COMPKEY + '<br /><br />' + properties.SPEED + ' mph</p>': 'Hover a Segment');
+      (properties ? 'Compkey:' + properties.COMPKEY + '<br /><br />' + Math.round(properties.SPEED*2.24 * 10) / 10 + ' mph</p>': 'Hover a Segment');
 };
 info.addTo(map);
 
