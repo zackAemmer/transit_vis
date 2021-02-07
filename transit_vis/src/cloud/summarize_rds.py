@@ -510,12 +510,14 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
         daily_results = get_results_by_time(conn, start_time, end_time, rds_limit)
         if daily_results is None:
             print(f"No results found for {start_time}")
-            return 0
+            continue
         print(f"Processing queried RDS data...{i+1}/{split_data}")
         daily_results = preprocess_trip_data(daily_results)
         all_daily_results.append(daily_results)
         del daily_results
         end_time = start_time
+    if len(all_daily_results) == 0:
+        return 0
     daily_results = pd.concat(all_daily_results)
 
     # Load the route segments shapefile
