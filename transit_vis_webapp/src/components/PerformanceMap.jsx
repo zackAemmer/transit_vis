@@ -9,76 +9,45 @@ const mapbox_attribution = '© <a href="https://www.mapbox.com/feedback/">Mapbox
 
 const PerformanceMap = ({ streets }) => {
 
-    // Functions for coloring map
-    var GRADES = [0, 2, 4, 6, 8, 10]
-    var COLORS = ['#d73027','#fc8d59','#fee090','#e0f3f8','#91bfdb','#4575b4']
-    function getColor(d) {
-    return  d > GRADES[5] ? COLORS[5] :
-            d > GRADES[4] ? COLORS[4] :
-            d > GRADES[3] ? COLORS[3] :
-            d > GRADES[2] ? COLORS[2] :
-            d > GRADES[1] ? COLORS[1] :
-            COLORS[0] ;
+  const jsonStyle = (street) => {
+    if (street.properties.SPEED != undefined) {
+      return ({
+        fillOpacity: 1.0,
+        weight: 5
+      });
+    } else {
+      return ({
+        fillOpacity: 0.7,
+        weight: 3
+      });
     };
-    const mapStyle = function(feature) {
-        if (feature.properties.SPEED == null) {
-            return {
-            "color": "#969696",
-            "weight": 4,
-            "opacity": 0.7
-            };
-        } else {
-            return {
-            "color": getColor(feature.properties.SPEED),
-            "weight": 6,
-            "opacity": 0.9
-            };
-        };
-    };
+  };
 
-    const onEachStreet = (street, layer) => {
-        layer.options.fillColor = street.properties.color;
-        const name = street.properties.UNITDESC;
-        const speed = street.properties.SPEED;
-        layer.bindPopup(`${name} ${speed}`);
-    }
+  const onEachStreet = (street, layer) => {
+    layer.options.color = street.properties.color;
+    const name = street.properties.STNAME_ORD;
+    const speed = street.properties.SPEED;
+    layer.bindPopup(`${name} ${speed}`);
+  };
 
-    return (
-        <MapContainer style={{height: "90vh"}} center={[47.606209, -122.332069]} zoom={14}>
-            <TileLayer
+  return (
+      <MapContainer 
+        center={[47.606209, -122.332069]}
+        zoom={14}
+        zoomSnap={0}
+        zoomDelta={.1}>
+          <TileLayer
             attribution={mapbox_attribution}
             url={mapbox_url}
-            />
-            <GeoJSON
-                data={streets}
-                onEachFeature={onEachStreet}
-            />
-      </MapContainer>
-    );
-}
+          />
+          <GeoJSON
+              data={streets}
+              onEachFeature={onEachStreet}
+              className="streets"
+              style={jsonStyle}
+          />
+    </MapContainer>
+  );
+};
 
 export default PerformanceMap;
-
-
-
-
-
-
-
-
-
-// Functions for map interactivity
-function onClick(event) {
-    console.log(event.target);
-    event.target.setStyle({
-      "weight": 20,
-      "color": "#111"
-    });
-  }
-  var popupFunction = function(segment, layer) {
-    layer.bindPopup(segment.properties.UNITDESC);
-    layer.on({
-      click: onClick
-    });
-  };
-  

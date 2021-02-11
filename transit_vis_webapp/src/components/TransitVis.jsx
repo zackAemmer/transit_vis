@@ -4,6 +4,7 @@ import PerformanceMap from "./PerformanceMap";
 import Legend from "./Legend";
 import Navigation from "./Navigation";
 import LoadStreetsTask from "../tasks/LoadStreetsTask";
+import legendItems from "../entities/LegendItems";
 
 const TransitVis = () => {
   const [streets, setStreets] = useState([]);
@@ -26,7 +27,7 @@ const TransitVis = () => {
         <div>
           <Navigation />
           <PerformanceMap streets={streets} />
-          <Legend />
+          <Legend legendItems={legendItems}/>
         </div>
       )}
     </div>
