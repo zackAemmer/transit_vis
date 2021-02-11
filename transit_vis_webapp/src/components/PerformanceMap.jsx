@@ -8,7 +8,6 @@ const mapbox_url = "https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/
 const mapbox_attribution = '© <a href="https://www.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 const PerformanceMap = ({ streets }) => {
-    console.log(streets);
 
     // Functions for coloring map
     var GRADES = [0, 2, 4, 6, 8, 10]
