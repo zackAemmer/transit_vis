@@ -1,0 +1,14 @@
+.leaflet-container {
+    width: 100vw;
+    height: 90vh;
+  }
+  
+  .bus-route {
+    fill: none;
+    stroke-width: 5px;
+    transition: stroke-width .2s;
+  }
+  
+  .bus-route:hover {
+    stroke-width: 15px;
+  }
