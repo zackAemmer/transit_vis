@@ -1,9 +1,9 @@
-import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { useEffect } from "react";
+import { useMap } from "react-leaflet";
 import legendItems from "../entities/LegendItems";
 
-function Legend() {
+const Legend = () => {
   const map = useMap();
 
   // Run when map is mounted
@@ -22,9 +22,6 @@ function Legend() {
       };
       div.innerHTML = labels.join("<br>");
       return div;
-    };
-    legend.onRemove = () => {
-      return;
     };
     legend.addTo(map);
   });

@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import Loading from "./Loading";
-import PerformanceMap from "./PerformanceMap";
-import Navigation from "./Navigation";
-import MapControls from "./MapControls";
 import LoadStreetsTask from "../tasks/LoadStreetsTask";
+import MapControls from "./MapControls";
+import Navigation from "./Navigation";
+import PerformanceMap from "./PerformanceMap";
 
 const TransitVis = () => {
   const [streets, setStreets] = useState([]);
-  const [selectedMetric, setMetric] = useState(["SPEED"]);
+  const [metric, setMetric] = useState("SPEED");
 
-  const load = () => {
+  function load() {
+    console.log("Loading Streets");
     const loadStreetsTask = new LoadStreetsTask();
     loadStreetsTask.load((streets) => setStreets(streets));
-  }
+  };
+
+  function handleMetricChange(newValue) {
+    setMetric(newValue);
+  };
 
   useEffect(load, []);
 
@@ -26,8 +31,8 @@ const TransitVis = () => {
       ) : (
         <div>
           <Navigation />
-          <PerformanceMap streets={streets} selectedMetric={selectedMetric}/>
-          <MapControls />
+          <PerformanceMap streets={streets} metric={metric}/>
+          <MapControls metric={metric} onChange={handleMetricChange}/>
         </div>
       )}
     </div>

@@ -15,6 +15,6 @@ const Loading = () => {
             <span class="visually-hidden"></span>
         </div>
     </div>);
-}
+};
 
 export default Loading;

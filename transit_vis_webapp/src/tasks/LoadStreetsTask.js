@@ -39,6 +39,7 @@ class LoadStreetsTask {
                 params.ExclusiveStartKey = data.LastEvaluatedKey;
                 docClient.scan(params, onScan);
             } else {
+                console.log("Scanned Database");
                 processData();
             };
         };

@@ -1,17 +1,17 @@
 import React, { useRef } from 'react';
 import {MapContainer, GeoJSON, TileLayer} from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import Legend from "./Legend";
+import "leaflet/dist/leaflet.css";
 
 const mapbox_token = "pk.eyJ1IjoiemFlNW9wIiwiYSI6ImNra29lNnppbzBvemwzMW1hdG9yMHQ0OGwifQ.YiQJrjX21uFntaF8sI1OQg";
 const mapbox_url = "https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=".concat(mapbox_token);
 const mapbox_attribution = '© <a href="https://www.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
-const PerformanceMap = ({ streets, selectedMetric}) => {
+const PerformanceMap = ({ streets, metric }) => {
 
   const jsonStyle = (feature) => {
     var featureValue;
-    switch (selectedMetric.current) {
+    switch (metric.current) {
       case "SPEED":
         featureValue = feature.properties.SPEED;
         break;

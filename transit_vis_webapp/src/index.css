@@ -12,16 +12,18 @@ code {
     monospace;
 }
 
-.geoJSON:hover {
-stroke-width: 15px;
-transition: stroke-width .2s;
-}
-
 .navigation-bar {
   display: flex;
   flex-direction: column;
   align-items: left;
   justify-content: left;
+}
+
+.leaflet-container {
+  position: relative;
+  width: 100vw;
+  height: 94vh;
+  z-index: 1;
 }
 
 .info {
@@ -38,18 +40,9 @@ transition: stroke-width .2s;
   color: #777;
 }
 
-.leaflet-container {
-  position: relative;
-  width: 100vw;
-  height: 94vh;
-  z-index: 1;
-}
-
-.mapControls {
-  position: absolute;
-  bottom: 2vh;
-  right: 2vw;
-  z-index: 2;
+.geoJSON:hover {
+  stroke-width: 15px;
+  transition: stroke-width .2s;
 }
 
 .legend {
@@ -63,4 +56,11 @@ transition: stroke-width .2s;
   height: 18px;
   float: left;
   margin-right: 16px;
+}
+
+.mapControls {
+  position: absolute;
+  bottom: 2vh;
+  right: 2vw;
+  z-index: 2;
 }
