@@ -1,19 +1,37 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {MapContainer, GeoJSON, TileLayer} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import "./PerformanceMap.css";
+import Legend from "./Legend";
 
 const mapbox_token = "pk.eyJ1IjoiemFlNW9wIiwiYSI6ImNra29lNnppbzBvemwzMW1hdG9yMHQ0OGwifQ.YiQJrjX21uFntaF8sI1OQg";
 const mapbox_url = "https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=".concat(mapbox_token);
 const mapbox_attribution = '© <a href="https://www.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
-const PerformanceMap = ({ streets }) => {
+const PerformanceMap = ({ streets, selectedMetric}) => {
 
-  const jsonStyle = (street) => {
-    if (street.properties.SPEED != undefined) {
+  const jsonStyle = (feature) => {
+    var featureValue;
+    switch (selectedMetric.current) {
+      case "SPEED":
+        featureValue = feature.properties.SPEED;
+        break;
+      case "SPEED_PCT":
+        featureValue = feature.properties.SPEED_PCT;
+        break;
+      case "SPEED_VAR":
+        featureValue = feature.properties.SPEED_VAR;
+        break;
+      case "DEVIATION":
+        featureValue = feature.properties.DEVIATION;
+        break;
+      case "TRAVERSALS":
+        featureValue = feature.properties.TRAVERSALS;
+        break;
+    }
+    if (featureValue != undefined) {
       return ({
         fillOpacity: 1.0,
-        weight: 5
+        weight: 10
       });
     } else {
       return ({
@@ -30,23 +48,31 @@ const PerformanceMap = ({ streets }) => {
     layer.bindPopup(`${name} ${speed}`);
   };
 
+  const renderGeoJSON = (features) => {
+    console.log("Rendering GeoJSON");
+    return (
+      <GeoJSON
+        data={features}
+        onEachFeature={onEachStreet}
+        className="geoJSON"
+        style={jsonStyle}
+      />
+    );
+  };
+
   return (
-      <MapContainer 
+    <div>
+      <MapContainer
         center={[47.606209, -122.332069]}
-        zoom={14}
-        zoomSnap={0}
-        zoomDelta={.1}>
-          <TileLayer
-            attribution={mapbox_attribution}
-            url={mapbox_url}
-          />
-          <GeoJSON
-              data={streets}
-              onEachFeature={onEachStreet}
-              className="streets"
-              style={jsonStyle}
-          />
-    </MapContainer>
+        zoom={14}>
+        <TileLayer
+          attribution={mapbox_attribution}
+          url={mapbox_url}
+        />
+        { renderGeoJSON(streets) }
+        <Legend />
+      </MapContainer>
+    </div>
   );
 };
 

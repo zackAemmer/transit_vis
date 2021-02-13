@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Loading from "./Loading";
 import PerformanceMap from "./PerformanceMap";
-import Legend from "./Legend";
 import Navigation from "./Navigation";
+import MapControls from "./MapControls";
 import LoadStreetsTask from "../tasks/LoadStreetsTask";
-import legendItems from "../entities/LegendItems";
 
 const TransitVis = () => {
   const [streets, setStreets] = useState([]);
+  const [selectedMetric, setMetric] = useState(["SPEED"]);
 
   const load = () => {
     const loadStreetsTask = new LoadStreetsTask();
@@ -26,8 +26,8 @@ const TransitVis = () => {
       ) : (
         <div>
           <Navigation />
-          <PerformanceMap streets={streets} />
-          <Legend legendItems={legendItems}/>
+          <PerformanceMap streets={streets} selectedMetric={selectedMetric}/>
+          <MapControls />
         </div>
       )}
     </div>

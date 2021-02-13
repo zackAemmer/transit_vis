@@ -14,6 +14,7 @@
     "react-dom": "^17.0.1",
     "react-leaflet": "^3.1.0",
     "react-scripts": "4.0.2",
+    "react-widgets": "^5.0.0-beta.22",
     "web-vitals": "^1.1.0"
   },
   "scripts": {

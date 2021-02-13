@@ -1,9 +1,0 @@
-.leaflet-container {
-    width: 100vw;
-    height: 89vh;
-}
-
-.streets:hover {
-  stroke-width: 15px;
-  transition: stroke-width .2s;
-}

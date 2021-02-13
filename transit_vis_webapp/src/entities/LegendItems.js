@@ -2,31 +2,31 @@ import LegendItem from "./LegendItem";
 
 const GRADES = [0, 2, 4, 6, 8, 10];
 const COLORS = ['#d73027','#fc8d59','#fee090','#e0f3f8','#91bfdb','#4575b4'];
-const UNITS = "mph";
+const UNITS = "m/s";
 
 const legendItems = [
     new LegendItem(
-        GRADES[0] + "-" + GRADES[1] + " " + UNITS,
+        GRADES[0] + "&ndash;" + GRADES[1] + " " + UNITS,
         COLORS[0],
         (speed) => speed < GRADES[1]
     ),
     new LegendItem(
-        GRADES[1] + "-" + GRADES[2] + " " + UNITS,
+        GRADES[1] + "&ndash;" + GRADES[2] + " " + UNITS,
         COLORS[1],
         (speed) => speed >= GRADES[1] && speed < GRADES[2]
     ),
     new LegendItem(
-        GRADES[2] + "-" + GRADES[3] + " " + UNITS,
+        GRADES[2] + "&ndash;" + GRADES[3] + " " + UNITS,
         COLORS[2],
         (speed) => speed >= GRADES[2] && speed < GRADES[3]
     ),
     new LegendItem(
-        GRADES[3] + "-" + GRADES[4] + " " + UNITS,
+        GRADES[3] + "&ndash;" + GRADES[4] + " " + UNITS,
         COLORS[3],
         (speed) => speed >= GRADES[3] && speed < GRADES[4]
     ),
     new LegendItem(
-        GRADES[4] + "-" + GRADES[5] + " " + UNITS,
+        GRADES[4] + "&ndash;" + GRADES[5] + " " + UNITS,
         COLORS[4],
         (speed) => speed >= GRADES[4] && speed < GRADES[5]
     ),

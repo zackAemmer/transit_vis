@@ -1,32 +1,34 @@
-import React from 'react';
-const Legend = ({ legendItems }) => {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "stretch",
-        }}
-      >
-        {legendItems.map((item) => (
-          <div
-            key={item.title}
-            style={{
-              backgroundColor: item.color,
-              flex: 1,
-              display: "flex",
-              alignItems: "center", // vertical
-              justifyContent: "center", // horiztontal
-              color: item.textColor != null ? item.textColor : "black",
-              fontWeight: "bolder",
-              fontSize: "1em",
-              height: "5vh",
-            }}
-          >
-            <span>{item.title}</span>
-          </div>
-        ))}
-      </div>
-    );
+import { useMap } from "react-leaflet";
+import L from "leaflet";
+import { useEffect } from "react";
+import legendItems from "../entities/LegendItems";
+
+function Legend() {
+  const map = useMap();
+
+  // Run when map is mounted
+  useEffect(() => {
+    const legend = L.control({ position: "bottomleft" });
+    legend.onAdd = () => {
+      const div = L.DomUtil.create("div", "info legend");
+      const labels = [];
+      for (let i = 0; i < legendItems.length; i++) {
+        labels.push(
+          '<i style="background:' +
+            legendItems[i].color +
+            '"></i> ' +
+            legendItems[i].title
+        );
+      };
+      div.innerHTML = labels.join("<br>");
+      return div;
+    };
+    legend.onRemove = () => {
+      return;
+    };
+    legend.addTo(map);
+  });
+  return null;
 };
 
 export default Legend;
