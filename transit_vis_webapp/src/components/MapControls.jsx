@@ -2,7 +2,7 @@ const MapControls = (props) => {
 
     function handleChange(event) {
         props.onChange(event.target.value);
-        console.log(props.metric);
+        console.log(event.target.value);
     }
 
     return (

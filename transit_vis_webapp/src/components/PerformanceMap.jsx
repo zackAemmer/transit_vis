@@ -7,11 +7,11 @@ const mapbox_token = "pk.eyJ1IjoiemFlNW9wIiwiYSI6ImNra29lNnppbzBvemwzMW1hdG9yMHQ
 const mapbox_url = "https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=".concat(mapbox_token);
 const mapbox_attribution = '© <a href="https://www.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
-const PerformanceMap = ({ streets, metric }) => {
+const PerformanceMap = (props) => {
 
   const jsonStyle = (feature) => {
     var featureValue;
-    switch (metric.current) {
+    switch (props.metric) {
       case "SPEED":
         featureValue = feature.properties.SPEED;
         break;
@@ -69,8 +69,8 @@ const PerformanceMap = ({ streets, metric }) => {
           attribution={mapbox_attribution}
           url={mapbox_url}
         />
-        { renderGeoJSON(streets) }
-        <Legend />
+        { renderGeoJSON(props.streets) }
+        <Legend streets={props.streets} metric={props.metric}/>
       </MapContainer>
     </div>
   );

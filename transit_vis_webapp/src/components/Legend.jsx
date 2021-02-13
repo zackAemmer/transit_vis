@@ -3,13 +3,18 @@ import { useEffect } from "react";
 import { useMap } from "react-leaflet";
 import legendItems from "../entities/LegendItems";
 
-const Legend = () => {
+const Legend = (props) => {
+  const metric = props.metric;
+  const streets = props.streets;
   const map = useMap();
+
+  //TODO calculate legend breaks, assign colors, etc
 
   // Run when map is mounted
   useEffect(() => {
     const legend = L.control({ position: "bottomleft" });
     legend.onAdd = () => {
+      //TODO remove if exists
       const div = L.DomUtil.create("div", "info legend");
       const labels = [];
       for (let i = 0; i < legendItems.length; i++) {

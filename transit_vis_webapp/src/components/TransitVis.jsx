@@ -15,10 +15,6 @@ const TransitVis = () => {
     loadStreetsTask.load((streets) => setStreets(streets));
   };
 
-  function handleMetricChange(newValue) {
-    setMetric(newValue);
-  };
-
   useEffect(load, []);
 
   return (
@@ -32,7 +28,7 @@ const TransitVis = () => {
         <div>
           <Navigation />
           <PerformanceMap streets={streets} metric={metric}/>
-          <MapControls metric={metric} onChange={handleMetricChange}/>
+          <MapControls metric={metric} onChange={(metric) => setMetric(metric)}/>
         </div>
       )}
     </div>
