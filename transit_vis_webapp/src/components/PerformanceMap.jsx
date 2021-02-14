@@ -12,7 +12,7 @@ const PerformanceMap = (props) => {
 
   const getRandomKey = () => {
     return Math.random();
-  }
+  };
 
   // Check metric and legend bins to assign a color value/popup to each feature
   const assignColor = (feature, layer) => {
