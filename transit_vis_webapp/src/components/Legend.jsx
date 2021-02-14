@@ -1,20 +1,14 @@
 import L from "leaflet";
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
-import legendItems from "../entities/LegendItems";
 
 const Legend = (props) => {
-  const metric = props.metric;
-  const streets = props.streets;
   const map = useMap();
+  const legendItems = props.legendItems.getLegendItemsAry();
 
-  //TODO calculate legend breaks, assign colors, etc
-
-  // Run when map is mounted
   useEffect(() => {
     const legend = L.control({ position: "bottomleft" });
     legend.onAdd = () => {
-      //TODO remove if exists
       const div = L.DomUtil.create("div", "info legend");
       const labels = [];
       for (let i = 0; i < legendItems.length; i++) {
@@ -29,6 +23,9 @@ const Legend = (props) => {
       return div;
     };
     legend.addTo(map);
+    return () => {
+      map.removeControl(legend);
+    };
   });
   return null;
 };

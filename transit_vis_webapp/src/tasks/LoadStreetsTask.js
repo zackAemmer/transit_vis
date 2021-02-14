@@ -1,6 +1,6 @@
 import AWS from "aws-sdk";
 import {features} from "../data/streets_big.json";
-import legendItems from "../entities/LegendItems";
+// import legendItems from "../entities/LegendItems";
 
 AWS.config.region = "us-east-2";
 AWS.config.credentials = new AWS.CognitoIdentityCredentials({
@@ -53,7 +53,7 @@ class LoadStreetsTask {
                 features[i].properties.SPEED_VAR = speed_var_ary[idx].pop();
                 features[i].properties.DEVIATION = sch_dev_ary[idx].pop();
                 features[i].properties.TRAVERSALS = num_trav_ary[idx].pop();
-                this.setStreetColor(features[i]);
+                // this.setStreetColor(features[i]);
             };
             this.setState(features);
         };
@@ -61,12 +61,12 @@ class LoadStreetsTask {
         docClient.scan(params, onScan);
     };
 
-    setStreetColor = (street) => {
-        const legendItem = legendItems.find((item) => item.isFor(street.properties.SPEED));
-        if (legendItem != null) {
-            street.properties.color = legendItem.color;
-        };
-    };
+    // setStreetColor = (street) => {
+    //     const legendItem = legendItems.find((item) => item.isFor(street.properties.SPEED));
+    //     if (legendItem != null) {
+    //         street.properties.color = legendItem.color;
+    //     };
+    // };
 };
 
 export default LoadStreetsTask;
