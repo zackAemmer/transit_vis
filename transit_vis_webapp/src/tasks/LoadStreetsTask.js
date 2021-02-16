@@ -12,6 +12,7 @@ var speed_ary = [];
 var speed_pct_ary = [];
 var speed_var_ary = [];
 var sch_dev_ary = [];
+var sch_dev_var_ary = [];
 var num_trav_ary = [];
 var params = {
     TableName: "KCM_Bus_Routes",
@@ -32,6 +33,7 @@ class LoadStreetsTask {
                     speed_pct_ary.push(item.pct_speed_m_s);
                     speed_var_ary.push(item.var_speed_m_s);
                     sch_dev_ary.push(item.med_deviation_s);
+                    sch_dev_var_ary.push(item.var_deviation_s);
                     num_trav_ary.push(item.num_traversals);
                 });
             };
@@ -52,6 +54,7 @@ class LoadStreetsTask {
                 features[i].properties.SPEED_PCT = speed_pct_ary[idx].pop();
                 features[i].properties.SPEED_VAR = speed_var_ary[idx].pop();
                 features[i].properties.DEVIATION = sch_dev_ary[idx].pop();
+                features[i].properties.DEVIATION_VAR = sch_dev_var_ary[idx].pop();
                 features[i].properties.TRAVERSALS = num_trav_ary[idx].pop();
                 // this.setStreetColor(features[i]);
             };
@@ -60,13 +63,6 @@ class LoadStreetsTask {
         this.setState = setState;
         docClient.scan(params, onScan);
     };
-
-    // setStreetColor = (street) => {
-    //     const legendItem = legendItems.find((item) => item.isFor(street.properties.SPEED));
-    //     if (legendItem != null) {
-    //         street.properties.color = legendItem.color;
-    //     };
-    // };
 };
 
 export default LoadStreetsTask;

@@ -226,6 +226,7 @@ def preprocess_trip_data(daily_results):
     # Remove rows where schedule deviation change is below -300 or above 300 (5mins)
     daily_results = daily_results[daily_results['deviation_change_s'] >= -300]
     daily_results = daily_results[daily_results['deviation_change_s'] <= 300]
+    daily_results = daily_results[daily_results['deviation_change_s'] != 0]
     daily_results.loc[:, 'deviation_change_s'] = round(
         daily_results.loc[:, 'deviation_change_s'])
 

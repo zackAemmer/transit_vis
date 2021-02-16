@@ -13,6 +13,7 @@ const MapControls = (props) => {
                 <option value="SPEED_PCT">95th Percentile Speed (m/s)</option>
                 <option value="SPEED_VAR">Variance Speed (m/s)</option>
                 <option value="DEVIATION">Median Schedule Deviation Change (s)</option>
+                <option value="DEVIATION_VAR">Variance Schedule Deviation Change (s)</option>
                 <option value="TRAVERSALS">Number of Traversals</option>
             </select>
         </div>

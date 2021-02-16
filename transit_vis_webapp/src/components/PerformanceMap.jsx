@@ -31,6 +31,9 @@ const PerformanceMap = (props) => {
       case "DEVIATION":
         featureValue = feature.properties.DEVIATION;
         break;
+      case "DEVIATION_VAR":
+        featureValue = feature.properties.DEVIATION_VAR;
+        break;
       case "TRAVERSALS":
         featureValue = feature.properties.TRAVERSALS;
         break;

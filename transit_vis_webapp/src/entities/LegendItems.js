@@ -34,6 +34,11 @@ class LegendItems {
                         metric_ary.push(this.features[i].properties.DEVIATION);
                     };
                     break;
+                case "DEVIATION_VAR":
+                    if (this.features[i].properties.DEVIATION_VAR != undefined) {
+                        metric_ary.push(this.features[i].properties.DEVIATION_VAR);
+                    };
+                    break;
                 case "TRAVERSALS":
                     if (this.features[i].properties.TRAVERSALS != undefined) {
                         metric_ary.push(this.features[i].properties.TRAVERSALS);
@@ -85,6 +90,8 @@ class LegendItems {
             case "SPEED_VAR":
                 return ("m/s");
             case "DEVIATION":
+                return ("s");
+            case "DEVIATION_VAR":
                 return ("s");
             case "TRAVERSALS":
                 return ("trips");
