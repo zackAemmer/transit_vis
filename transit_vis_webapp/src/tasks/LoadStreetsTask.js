@@ -16,7 +16,7 @@ var sch_dev_var_ary = [];
 var num_trav_ary = [];
 var params = {
     TableName: "KCM_Bus_Routes",
-    ProjectionExpression: "compkey, med_speed_m_s, pct_speed_m_s, var_speed_m_s, med_deviation_s, num_traversals"
+    ProjectionExpression: "compkey, med_speed_m_s, pct_speed_m_s, var_speed_m_s, med_deviation_s, var_deviation_s, num_traversals"
 };
 
 class LoadStreetsTask {

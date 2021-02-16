@@ -66,3 +66,4 @@ transit_vis/
 * [Sound Transit Open Transit Data (API Access)](https://www.soundtransit.org/help-contacts/business-information/open-transit-data-otd)
 * [King County Metro GTFS Data (Static Route Shapes and Vehicle/Trip IDs)](http://metro.kingcounty.gov/gtfs/)
 * [SDOT Seattle Street Segments Dataset](https://data-seattlecitygis.opendata.arcgis.com/datasets/seattle-streets)
+* [Google GTFS-RT](https://github.com/google/transit/tree/master/gtfs-realtime/spec/en)
