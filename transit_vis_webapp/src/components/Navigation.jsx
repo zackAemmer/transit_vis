@@ -1,11 +1,12 @@
 import React from "react";
+
 import Navbar from "react-bootstrap/Navbar";
 import Nav from "react-bootstrap/Nav";
 
 const Navigation = () => {
     return (
-      <div>
-        <Navbar bg="dark" variant="dark" expand="lg">
+      <div className="navigation-bar">
+        <Navbar bg="dark" variant="dark" expand="md">
           <Navbar.Brand>TransitVis</Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">

@@ -6,7 +6,7 @@ const MapControls = (props) => {
     }
 
     return (
-        <div className="mapControls info">
+        <div className="map-controls info">
             <h4>Performance Metric</h4>
             <select className="info" onChange={handleChange} defaultValue="SPEED">
                 <option value="SPEED">Median Speed (m/s)</option>

@@ -46,12 +46,11 @@ const PerformanceMap = (props) => {
     };
 
     const name = feature.properties.STNAME_ORD;
-    const metric = featureValue;
+    const metric = Math.round(featureValue * 10) / 10;
     layer.bindPopup(`${name}: ${metric}`);
   };
 
   return (
-    <div>
       <MapContainer
         center={[47.606209, -122.332069]}
         zoom={14}>
@@ -67,7 +66,6 @@ const PerformanceMap = (props) => {
         />
         <Legend legendItems={props.legendItems}/>
       </MapContainer>
-    </div>
   );
 };
 

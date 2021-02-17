@@ -25,22 +25,22 @@ const TransitVis = () => {
   useEffect(load, []);
 
   // After streets are done loading, swap the load screen for map components
-  return (
-    <div>
-      {streets.length === 0 ? (
-        <div>
-          <Navigation />
-          <Loading />
-        </div>
-      ) : (
-        <div>
-          <Navigation />
-          <PerformanceMap streets={streets} legendItems={legendItems} metric={metric}/>
-          <MapControls metric={metric} onChange={(metric) => setMetric(metric)}/>
-        </div>
-      )}
+  if (streets.length === 0) {
+    return (
+      <div className="App-body">
+        <Navigation />
+        <Loading />
+      </div>
+    );
+  } else {
+    return (
+      <div className="App-body">
+        <Navigation />
+        <PerformanceMap streets={streets} legendItems={legendItems} metric={metric}/>
+        <MapControls metric={metric} onChange={(metric) => setMetric(metric)}/>
     </div>
-  );
+    );
+  };
 };
 
 export default TransitVis;

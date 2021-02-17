@@ -1,66 +1,57 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.App-body {
+  font-size: 1.6vw;
+  font: Arial, Helvetica, sans-serif;
+  height: 100vh;
+  width: 100vw;
 }
 
 .navigation-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: left;
-  justify-content: left;
+  position: sticky;
+  height: 5%;
+  width: 100%;
+  z-index: 2;
+  font-size: min(2em, 16px);
 }
 
 .leaflet-container {
-  position: relative;
-  width: 100vw;
-  height: 94vh;
+  width: 100%;
+  height: 95%;
   z-index: 1;
 }
-
-.info {
-  padding: 6px 8px;
-  font: 14px/16px Arial, Helvetica, sans-serif;
-  background: white;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
-}
-
-.info h4 {
-  margin: 0 0 5px;
-  color: #777;
-}
-
 .geoJSON:hover {
-  stroke-width: 15px;
+  stroke-width: 1.1em;
   transition: stroke-width .2s;
 }
 
+.map-controls {
+  position: absolute;
+  bottom: 2%;
+  right: 1%;
+  z-index: 2;
+}
+
 .legend {
-  text-align: left;
-  line-height: 18px;
+  text-align: right;
+  width: 100%;
+  bottom: 2%;
+  left: 1%;
   color: #555;
 }
-
 .legend i {
-  width: 18px;
-  height: 18px;
+  width: 1.4em;
+  height: 1.4em;
   float: left;
-  margin-right: 16px;
+  margin-right: 1em;
 }
 
-.mapControls {
-  position: absolute;
-  bottom: 2vh;
-  right: 2vw;
-  z-index: 2;
+.info {
+  padding: .5em .8em;
+  font-size: min(1.4em, 16px);
+  background: white;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 .3em rgba(0, 0, 0, 0.2);
+  border-radius: .5em;
+}
+.info h4 {
+  color: #777;
 }
