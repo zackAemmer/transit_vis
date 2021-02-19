@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Switch, Route } from "react-router-dom";
+import About from "./About";
 import Loading from "./Loading";
 import LoadStreetsTask from "../tasks/LoadStreetsTask";
 import MapControls from "./MapControls";
@@ -36,8 +38,15 @@ const TransitVis = () => {
     return (
       <div className="App-body">
         <Navigation />
-        <PerformanceMap streets={streets} legendItems={legendItems} metric={metric}/>
-        <MapControls metric={metric} onChange={(metric) => setMetric(metric)}/>
+        <Switch>
+          <Route path="/about">
+            <About />
+          </Route>
+          <Route exact path="/">
+            <PerformanceMap streets={streets} legendItems={legendItems} metric={metric}/>
+            <MapControls metric={metric} onChange={(metric) => setMetric(metric)}/>
+          </Route>
+        </Switch>
     </div>
     );
   };
