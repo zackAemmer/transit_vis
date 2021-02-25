@@ -427,12 +427,12 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
             values to.
     """
     # Get formatted date to assign to speed data
-    collection_date = datetime.utcfromtimestamp(end_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y')
+    collection_date = datetime.utcfromtimestamp(end_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y-%H:%M')
 
     # Aggregate the observed bus speeds by their nearest segment ids
     to_upload = to_upload[['seg_compkey', 'seg_route_id', 'speed_m_s', 'deviation_change_s', 'seg_length']].copy()
     to_upload.dropna(inplace=True)
-    to_upload = to_upload.groupby(['seg_compkey']).agg(['median', 'var', 'count', percentile(95)]).reset_index()
+    to_upload = to_upload.groupby(['seg_compkey']).agg(['median', 'var', 'count', percentile(95), percentile(5)]).reset_index()
     to_upload = to_upload.loc[to_upload[('seg_route_id', 'count')] > 1]
     to_upload = to_upload.to_dict(orient='records')
 
@@ -442,29 +442,39 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
             Key={
                 'compkey': segment[('seg_compkey', '')]
             },
-            UpdateExpression="SET med_speed_m_s=list_append(if_not_exists(med_speed_m_s, :empty_list), :med_speed_val)," \
+            UpdateExpression="SET " \
+                "med_speed_m_s=list_append(if_not_exists(med_speed_m_s, :empty_list), :med_speed_val)," \
                 "var_speed_m_s=list_append(if_not_exists(var_speed_m_s, :empty_list), :var_speed_val)," \
+                "pct_speed_95_m_s=list_append(if_not_exists(pct_speed_95_m_s, :empty_list), :pct_speed_95_val)," \
+                "pct_speed_5_m_s=list_append(if_not_exists(pct_speed_5_m_s, :empty_list), :pct_speed_5_val)," \
                 "med_deviation_s=list_append(if_not_exists(med_deviation_s, :empty_list), :med_deviation_val)," \
                 "var_deviation_s=list_append(if_not_exists(var_deviation_s, :empty_list), :var_deviation_val)," \
                 "num_traversals=list_append(if_not_exists(num_traversals, :empty_list), :count_val)," \
-                "pct_speed_m_s=list_append(if_not_exists(pct_speed_m_s, :empty_list), :pct_speed_val)",
+                "date_updated=list_append(if_not_exists(date_updated, :empty_list), :date_val)",
             ExpressionAttributeValues={
                 ':med_speed_val': [str(segment[('speed_m_s', 'median')])],
                 ':var_speed_val': [str(segment[('speed_m_s', 'var')])],
+                ':pct_speed_95_val': [str(segment[('speed_m_s', 'pct_95')])],
+                ':pct_speed_5_val': [str(segment[('speed_m_s', 'pct_5')])],
                 ':med_deviation_val': [str(segment[('deviation_change_s', 'median')])],
                 ':var_deviation_val': [str(segment[('deviation_change_s', 'var')])],
                 ':count_val': [str(segment[('speed_m_s', 'count')])],
-                ':pct_speed_val': [str(segment[('speed_m_s', 'pct_95')])],
+                ':date_val': [str(collection_date)],
                 ':empty_list': []})
-    # Remove the first item in the list for the attribute of each updated segment
-    for segment in to_upload:
-        dynamodb_table.update_item(
-            Key={
-                'compkey': segment[('seg_compkey', '')]
-            },
-            UpdateExpression="REMOVE med_speed_m_s[0], var_speed_m_s[0]," \
-                "med_deviation_s[0], var_deviation_s[0]," \
-                "num_traversals[0], pct_speed_m_s[0]")
+    # # Remove the first item in the list for the attribute of each updated segment
+    # for segment in to_upload:
+    #     dynamodb_table.update_item(
+    #         Key={
+    #             'compkey': segment[('seg_compkey', '')]
+    #         },
+    #         UpdateExpression="REMOVE " \
+    #             "med_speed_m_s[0]," \
+    #             "var_speed_m_s[0]," \
+    #             "pct_speed_95_m_s[0]," \
+    #             "pct_speed_5_m_s[0]," \
+    #             "med_deviation_s[0]," \
+    #             "var_deviation_s[0]," \
+    #             "num_traversals[0]")
     return
 
 def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, upload):

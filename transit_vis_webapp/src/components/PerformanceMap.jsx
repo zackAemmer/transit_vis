@@ -19,20 +19,23 @@ const PerformanceMap = (props) => {
 
     var featureValue;
     switch (props.metric) {
-      case "SPEED":
-        featureValue = feature.properties.SPEED;
+      case "SPEED_MED":
+        featureValue = feature.properties.SPEED_MED;
         break;
-      case "SPEED_PCT":
-        featureValue = feature.properties.SPEED_PCT;
+      case "SPEED_STD":
+        featureValue = feature.properties.SPEED_STD;
         break;
-      case "SPEED_VAR":
-        featureValue = feature.properties.SPEED_VAR;
+      case "SPEED_PCT_95":
+        featureValue = feature.properties.SPEED_PCT_95;
         break;
-      case "DEVIATION":
-        featureValue = feature.properties.DEVIATION;
+      case "SPEED_PCT_5":
+        featureValue = feature.properties.SPEED_PCT_5;
         break;
-      case "DEVIATION_VAR":
-        featureValue = feature.properties.DEVIATION_VAR;
+      case "DEVIATION_MED":
+        featureValue = feature.properties.DEVIATION_MED;
+        break;
+      case "DEVIATION_STD":
+        featureValue = feature.properties.DEVIATION_STD;
         break;
       case "TRAVERSALS":
         featureValue = feature.properties.TRAVERSALS;

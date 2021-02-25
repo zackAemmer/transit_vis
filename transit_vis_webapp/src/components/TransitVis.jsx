@@ -11,7 +11,7 @@ import LegendItems from '../entities/LegendItems';
 const TransitVis = () => {
   // Variables that define site state; (change as user interacts with site)
   const [streets, setStreets] = useState([]);
-  const [metric, setMetric] = useState("SPEED");
+  const [metric, setMetric] = useState("SPEED_MED"); //Set default metric
 
   // Constant list of bins that updates with state and gets passed down
   const legendItems = new LegendItems(streets, metric);

@@ -9,13 +9,15 @@ const MapControls = (props) => {
         <div className="map-controls info">
             <h4>Performance Metric</h4>
             <select className="info" onChange={handleChange} defaultValue="SPEED">
-                <option value="SPEED">Median Speed (m/s)</option>
-                <option value="SPEED_PCT">95th Percentile Speed (m/s)</option>
-                <option value="SPEED_VAR">Variance Speed (m/s)</option>
-                <option value="DEVIATION">Median Schedule Deviation Change (s)</option>
-                <option value="DEVIATION_VAR">Variance Schedule Deviation Change (s)</option>
+                <option value="SPEED_MED">Median Speed (mph)</option>
+                <option value="SPEED_STD">Standard Deviation Speed (mph)</option>
+                <option value="SPEED_PCT_95">95th Percentile Speed (mph)</option>
+                <option value="SPEED_PCT_5">5th Percentile Speed (mph)</option>
+                <option value="DEVIATION_MED">Median Schedule Change (s)</option>
+                <option value="DEVIATION_STD">Standard Deviation Schedule Change (s)</option>
                 <option value="TRAVERSALS">Number of Traversals</option>
             </select>
+            <h4>Filters</h4>
         </div>
     );
 };

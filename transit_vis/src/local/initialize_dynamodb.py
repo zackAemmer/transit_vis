@@ -115,11 +115,12 @@ def upload_segments_to_dynamo(dynamodb_resource, table_name, segments):
                     'compkey': segment['properties']['COMPKEY'],
                     'med_speed_m_s': [],
                     'var_speed_m_s': [],
-                    'pct_speed_m_s': [],
+                    'pct_speed_95_m_s': [],
+                    'pct_speed_5_m_s': [],
                     'med_deviation_s': [],
                     'var_deviation_s': [],
                     'num_traversals': [],
-                    'med_travel_time_s': []
+                    'date_updated': []
                 })
     return 1
 
