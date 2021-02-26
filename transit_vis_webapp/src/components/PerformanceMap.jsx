@@ -8,7 +8,7 @@ const PerformanceMap = (props) => {
   const mapbox_token = "pk.eyJ1IjoiemFlNW9wIiwiYSI6ImNra29lNnppbzBvemwzMW1hdG9yMHQ0OGwifQ.YiQJrjX21uFntaF8sI1OQg";
   const mapbox_url = "https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=".concat(mapbox_token);
   const mapbox_attribution = '© <a href="https://www.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-  const legendItems = props.legendItems.getLegendItemsAry();
+  const legendItemsAry = props.legendItems.getLegendItemsAry();
 
   const getRandomKey = () => {
     return Math.random();
@@ -42,7 +42,7 @@ const PerformanceMap = (props) => {
         break;
     };
 
-    const legendItem = legendItems.find((item) => item.isFor(featureValue));
+    const legendItem = legendItemsAry.find((item) => item.isFor(featureValue));
     if (legendItem != null) {
       feature.properties.color = legendItem.color;
       layer.options.color = feature.properties.color;

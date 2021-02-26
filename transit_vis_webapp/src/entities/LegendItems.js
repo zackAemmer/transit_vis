@@ -1,82 +1,86 @@
 import {quantile} from "d3-array";
 import LegendItem from "./LegendItem";
+import * as d3ScaleChromatic from "d3-scale-chromatic";
 
 class LegendItems {
-    constructor(streets, metric) {
-        this.colors = ['#d73027','#fc8d59','#fee090','#e0f3f8','#91bfdb','#4575b4'];
-        this.numBins = 6;
+    constructor(streets, metric, gradient, bins, scaleType) {
         this.features = streets;
         this.metric = metric;
+        this.gradient = gradient;
+        this.numBins = bins;
+        this.scaleType = scaleType;
     }
 
     getMetricAry = function() {
         var metric_ary = [];
 
+        // Check each geoJSON element to get an array of the chosen metric
         for (let i=0; i<this.features.length; i++) {
             switch (this.metric) {
                 case "SPEED_MED":
-                    if (this.features[i].properties.SPEED_MED != undefined) {
-                        metric_ary.push(this.features[i].properties.SPEED_MED);
-                    };
+                    metric_ary.push(this.features[i].properties.SPEED_MED);
                     break;
                 case "SPEED_STD":
-                    if (this.features[i].properties.SPEED_STD != undefined) {
-                        metric_ary.push(this.features[i].properties.SPEED_STD);
-                    };
+                    metric_ary.push(this.features[i].properties.SPEED_STD);
                     break;
                 case "SPEED_PCT_95":
-                    if (this.features[i].properties.SPEED_PCT_95 != undefined) {
+                    if (this.scaleType == "shared") {
+                        metric_ary.push(this.features[i].properties.SPEED_MED);
+                    } else {
                         metric_ary.push(this.features[i].properties.SPEED_PCT_95);
                     };
                     break;
                 case "SPEED_PCT_5":
-                    if (this.features[i].properties.SPEED_PCT_5 != undefined) {
+                    if (this.scaleType == "shared") {
+                        metric_ary.push(this.features[i].properties.SPEED_MED);
+                    } else {
                         metric_ary.push(this.features[i].properties.SPEED_PCT_5);
                     };
                     break;
                 case "DEVIATION_MED":
-                    if (this.features[i].properties.DEVIATION_MED != undefined) {
-                        metric_ary.push(this.features[i].properties.DEVIATION_MED);
-                    };
+                    metric_ary.push(this.features[i].properties.DEVIATION_MED);
                     break;
                 case "DEVIATION_STD":
-                    if (this.features[i].properties.DEVIATION_STD != undefined) {
-                        metric_ary.push(this.features[i].properties.DEVIATION_STD);
-                    };
+                    metric_ary.push(this.features[i].properties.DEVIATION_STD);
                     break;
                 case "TRAVERSALS":
-                    if (this.features[i].properties.TRAVERSALS != undefined) {
-                        metric_ary.push(this.features[i].properties.TRAVERSALS);
-                    };
+                    metric_ary.push(this.features[i].properties.TRAVERSALS);
                     break;
               };
         };
+
+        // Remove NaN values
+        metric_ary = metric_ary.filter(function(value) {
+            return !Number.isNaN(value);
+        });
+        metric_ary = metric_ary.filter(function(value) {
+            return value !== undefined;
+         });
         return (metric_ary);
     };
 
     calculateGrades = function() {
         const grades = [];
-        const groupType = "percentiles";
         const metric_ary = this.getMetricAry();
 
-        if (groupType === "equalIntervals") {
-            const min = min(metric_ary);
-            const max = max(metric_ary);
-            var binSize = ((max - min) / this.numBins);
-            var current = min;
+        if (this.gradient === "equalIntervals") {
+            const min = Math.min.apply(Math, metric_ary);
+            const max = Math.max.apply(Math, metric_ary);
+            const binSize = ((max - min) / this.numBins);
+            let current = min;
             for (let i=0; i<this.numBins; i++) {
-                var x = Math.round(current*10)/10
+                let x = Math.round(current*10)/10
                 grades.push(x);
                 current = current+binSize;
             };
             return (grades);
-        } else if (groupType === "percentiles") {
+        } else if (this.gradient === "percentiles") {
             const min = 0.0;
             const max = 1.0;
-            var binSize = ((max - min) / this.numBins);
-            var current = min;
+            const binSize = ((max - min) / this.numBins);
+            let current = min;
             for (let i=0; i<this.numBins; i++) {
-                var x = quantile(metric_ary, current);
+                let x = quantile(metric_ary, current);
                 x = Math.round(x*10)/10;
                 grades.push(x);
                 current = current+binSize;
@@ -107,48 +111,45 @@ class LegendItems {
 
     getLegendItemsAry = function() {
         const GRADES = this.calculateGrades();
-        const COLORS = this.colors;
         const UNITS = this.getUnits();
+        let COLORS = d3ScaleChromatic.schemeRdYlBu[this.numBins];
+        const reversed = ["SPEED_STD","DEVIATION_MED","DEVIATION_STD"];
 
-        const testItems = [
-            new LegendItem(
-                GRADES[0] + " &ndash; " + GRADES[1] + " " + UNITS,
-                COLORS[0],
-                (metric) => metric < GRADES[1]
-            ),
-            new LegendItem(
-                GRADES[1] + " &ndash; " + GRADES[2] + " " + UNITS,
-                COLORS[1],
-                (metric) => metric >= GRADES[1] && metric < GRADES[2]
-            ),
-            new LegendItem(
-                GRADES[2] + " &ndash; " + GRADES[3] + " " + UNITS,
-                COLORS[2],
-                (metric) => metric >= GRADES[2] && metric < GRADES[3]
-            ),
-            new LegendItem(
-                GRADES[3] + " &ndash; " + GRADES[4] + " " + UNITS,
-                COLORS[3],
-                (metric) => metric >= GRADES[3] && metric < GRADES[4]
-            ),
-            new LegendItem(
-                GRADES[4] + " &ndash; " + GRADES[5] + " " + UNITS,
-                COLORS[4],
-                (metric) => metric >= GRADES[4] && metric < GRADES[5]
-            ),
-            new LegendItem(
-                GRADES[5] + "+" + " " + UNITS,
-                COLORS[5],
-                (metric) => metric >= GRADES[5]
-            ),
-            new LegendItem(
+        if (reversed.includes(this.metric)) {
+            let reversedCOLORS = [];
+            //d3ScaleChromatic does not work well with .reverse() here - do it manually
+            for (let i=COLORS.length-1; i>=0; i--) {
+                let color = COLORS[i];
+                reversedCOLORS.push(color);
+            };
+            COLORS = reversedCOLORS;
+        };
+
+        const legendItemsAry = [];
+        for (let i=0; i<this.numBins-1; i++) {
+            const legendItem = new LegendItem(
+                GRADES[i] + " &ndash; " + GRADES[i+1] + " " + UNITS,
+                COLORS[i],
+                (metric) => metric < GRADES[i+1]
+            );
+            legendItemsAry.push(legendItem);
+        };
+
+        const lastLegendItem = new LegendItem(
+                GRADES[this.numBins-1] + "+" + " " + UNITS,
+                COLORS[this.numBins-1],
+                (metric) => metric >= GRADES[this.numBins-1]
+            );
+        legendItemsAry.push(lastLegendItem);
+
+        const undefinedLegendItem = new LegendItem(
                 "No Data",
                 "#696969",
                 (metric) => true
-            )
-        ];
+        );
+        legendItemsAry.push(undefinedLegendItem);
 
-        return (testItems);
+        return (legendItemsAry);
     };
 };
 

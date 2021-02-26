@@ -4,19 +4,19 @@ import { useMap } from "react-leaflet";
 
 const Legend = (props) => {
   const map = useMap();
-  const legendItems = props.legendItems.getLegendItemsAry();
 
   useEffect(() => {
+    const legendItemsAry = props.legendItems.getLegendItemsAry();
     const legend = L.control({ position: "bottomleft" });
     legend.onAdd = () => {
       const div = L.DomUtil.create("div", "info legend");
       const labels = [];
-      for (let i = 0; i < legendItems.length; i++) {
+      for (let i = 0; i < legendItemsAry.length; i++) {
         labels.push(
           '<i style="background:' +
-            legendItems[i].color +
-            '"></i> ' +
-            legendItems[i].title
+          legendItemsAry[i].color +
+          '"></i> ' +
+          legendItemsAry[i].title
         );
       };
       div.innerHTML = labels.join("<br>");

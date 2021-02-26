@@ -7,14 +7,20 @@ import MapControls from "./MapControls";
 import Navigation from "./Navigation";
 import PerformanceMap from "./PerformanceMap";
 import LegendItems from '../entities/LegendItems';
+import { bisectCenter } from 'd3-array';
 
 const TransitVis = () => {
   // Variables that define site state; (change as user interacts with site)
   const [streets, setStreets] = useState([]);
-  const [metric, setMetric] = useState("SPEED_MED"); //Set default metric
+  const [filterRoute, setFilterRoute] = useState("allRoutes");
+  const [filterTime, setFilterTime] = useState("allTimes");
+  const [metric, setMetric] = useState("SPEED_MED");
+  const [gradient, setGradient] = useState("percentiles");
+  const [bins, setBins] = useState("6");
+  const [scaleType, setScaleType] = useState("flexible");
 
   // Constant list of bins that updates with state and gets passed down
-  const legendItems = new LegendItems(streets, metric);
+  const legendItems = new LegendItems(streets, metric, gradient, bins, scaleType);
 
   // Get the street data from dynamodb and store it in the state variable
   function load() {
@@ -43,11 +49,28 @@ const TransitVis = () => {
             <About />
           </Route>
           <Route exact path="/">
-            <PerformanceMap streets={streets} legendItems={legendItems} metric={metric}/>
-            <MapControls metric={metric} onChange={(metric) => setMetric(metric)}/>
+            <PerformanceMap
+              streets={streets}
+              legendItems={legendItems}
+              metric={metric}
+            />
+            <MapControls
+              metric={metric}
+              filterRoute={filterRoute}
+              filterTime={filterTime}
+              gradient={gradient}
+              bins={bins}
+              scaleType={scaleType}
+              onMetricChange={(metric) => setMetric(metric)}
+              onRouteChange={(filterRoute) => setFilterRoute(filterRoute)}
+              onTimeChange={(filterTime) => setFilterTime(filterTime)}
+              onGradientChange={(gradient) => setGradient(gradient)}
+              onBinChange={(bins) => setBins(bins)}
+              onScaleTypeChange={(scaleType) => setScaleType(scaleType)}
+            />
           </Route>
         </Switch>
-    </div>
+      </div>
     );
   };
 };
