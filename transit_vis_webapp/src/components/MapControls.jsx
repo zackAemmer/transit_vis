@@ -1,3 +1,6 @@
+var route_compkey_dict = require("../data/route_compkey_dict.json");
+
+
 const MapControls = (props) => {
 
     function handleMetricChange(event) {
@@ -43,16 +46,18 @@ const MapControls = (props) => {
                 <option value="TRAVERSALS">Number of Traversals</option>
             </select>
             <h4>Filter</h4>
-                <select className="info" onChange={handleRouteChange} defaultValue="allRoutes">
-                    <option value="allRoutes">All Segments</option>
-                    {/* <option value="542">542</option> */}
-                </select>
-                <select className="info" onChange={handleTimeChange} defaultValue="allTimes">
-                    <option value="allTimes">All Times</option>
-                    {/* <option value="AM">Percentiles</option>
-                    <option value="MID">Equal Intervals</option>
-                    <option value="PM">Equal Intervals</option> */}
-                </select>
+            <select className="info" onChange={handleRouteChange} defaultValue="allRoutes">
+                <option value="allRoutes">All Routes</option>
+                {Object.keys(route_compkey_dict).map(key => (
+                    <option value={`${key}`}>{key}</option>
+                ))};
+            </select>
+            <select className="info" onChange={handleTimeChange} defaultValue="allTimes">
+                <option value="allTimes">All Times</option>
+                {/* <option value="AM">Percentiles</option>
+                <option value="MID">Equal Intervals</option>
+                <option value="PM">Equal Intervals</option> */}
+            </select>
             <h4>Visualization</h4>
             <select className="info" onChange={handleGradientChange} defaultValue="percentiles">
                 <option value="percentiles">Percentiles</option>

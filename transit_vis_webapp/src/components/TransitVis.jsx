@@ -7,7 +7,7 @@ import MapControls from "./MapControls";
 import Navigation from "./Navigation";
 import PerformanceMap from "./PerformanceMap";
 import LegendItems from '../entities/LegendItems';
-import { bisectCenter } from 'd3-array';
+
 
 const TransitVis = () => {
   // Variables that define site state; (change as user interacts with site)
@@ -53,6 +53,7 @@ const TransitVis = () => {
               streets={streets}
               legendItems={legendItems}
               metric={metric}
+              filterRoute={filterRoute}
             />
             <MapControls
               metric={metric}

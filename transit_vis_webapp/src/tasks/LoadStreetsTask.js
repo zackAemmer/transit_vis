@@ -1,6 +1,7 @@
 import AWS from "aws-sdk";
 import {features} from "../data/streets_big.json";
 
+
 AWS.config.region = "us-east-2";
 AWS.config.credentials = new AWS.CognitoIdentityCredentials({
     IdentityPoolId: "us-east-2:4e0b1ce8-5ab0-4679-a93f-88c91c151677"

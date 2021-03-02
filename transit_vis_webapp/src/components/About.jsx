@@ -1,6 +1,7 @@
 import React from 'react';
 import test from '../images/about_image.JPG';
 
+
 const About = () => {
     return (
         <div className="about-page">

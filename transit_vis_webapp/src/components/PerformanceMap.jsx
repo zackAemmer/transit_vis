@@ -1,7 +1,9 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import {MapContainer, GeoJSON, TileLayer} from "react-leaflet";
 import Legend from "./Legend";
 import "leaflet/dist/leaflet.css";
+var route_compkey_dict = require("../data/route_compkey_dict.json");
+
 
 const PerformanceMap = (props) => {
 
@@ -13,6 +15,22 @@ const PerformanceMap = (props) => {
   const getRandomKey = () => {
     return Math.random();
   };
+
+  const checkFilter = (feature, layer) => {
+    // Is there a specific route selected in the filter control
+    let filterRoute = props.filterRoute;
+    if (filterRoute==='allRoutes') {
+      return true;
+    };
+    // If so, what compkeys correspond to that route
+    const compkeysToShow = route_compkey_dict[filterRoute];
+    // Is this feature's compkey in that list, or not
+    if (compkeysToShow.includes(feature.properties.COMPKEY)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   // Check metric and legend bins to assign a color value/popup to each feature
   const assignColor = (feature, layer) => {
@@ -64,6 +82,7 @@ const PerformanceMap = (props) => {
         <GeoJSON
           key={getRandomKey()} // Leaflet will not tell React to re-render unless key changes
           data={props.streets}
+          filter={checkFilter}
           onEachFeature={assignColor}
           className="geoJSON"
         />
