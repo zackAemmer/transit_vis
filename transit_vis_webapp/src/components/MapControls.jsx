@@ -57,7 +57,7 @@ const MapControls = (props) => {
                 <option value="AM">AM Peak (6-9AM)</option>
                 <option value="PM">PM Peak (4-7PM)</option>
             </select>
-            <h4>Classes</h4>
+            <h4>Visualization Options</h4>
             <select className="info" onChange={handleGradientChange} defaultValue="QUANTILES">
                 <option value="QUANTILES">Quantiles</option>
                 <option value="EQUAL_INTERVALS">Equal Intervals</option>
