@@ -26,7 +26,7 @@ const About = () => {
 
                 <h5>Contact</h5>
                 <p>If you have any questions about the visualization tool, collection process, or other details please don't hesitate to reach out! All code for the web tool and scraping process is also available on Github.</p>
-                <a href="mailto: zae5op@uw.edu">Zack Aemmer</a>
+                <a href="mailto: zae5op@uw.edu">Email</a>
             </div>
         </div>
     );

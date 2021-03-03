@@ -15,9 +15,9 @@ const TransitVis = () => {
   const [filterRoute, setFilterRoute] = useState("allRoutes");
   const [filterTime, setFilterTime] = useState("FULL_DAY");
   const [metric, setMetric] = useState("SPEED_MED");
-  const [gradient, setGradient] = useState("percentiles");
+  const [gradient, setGradient] = useState("QUANTILES");
   const [bins, setBins] = useState("6");
-  const [scaleType, setScaleType] = useState("flexible");
+  const [scaleType, setScaleType] = useState("ADAPTIVE");
 
   // Constant list of bins that updates with state and gets passed down
   const legendItems = new LegendItems(streets, metric, gradient, bins, scaleType, filterTime);

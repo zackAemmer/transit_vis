@@ -57,10 +57,10 @@ const MapControls = (props) => {
                 <option value="AM">AM Peak (6-9AM)</option>
                 <option value="PM">PM Peak (4-7PM)</option>
             </select>
-            <h4>Visualization</h4>
-            <select className="info" onChange={handleGradientChange} defaultValue="percentiles">
-                <option value="percentiles">Percentiles</option>
-                <option value="equalIntervals">Equal Intervals</option>
+            <h4>Classes</h4>
+            <select className="info" onChange={handleGradientChange} defaultValue="QUANTILES">
+                <option value="QUANTILES">Quantiles</option>
+                <option value="EQUAL_INTERVALS">Equal Intervals</option>
             </select>
             <select className="info" onChange={handleBinsChange} defaultValue="6">
                 <option value="3">3</option>
@@ -72,9 +72,9 @@ const MapControls = (props) => {
                 <option value="9">9</option>
                 <option value="10">10</option>
             </select>
-            <select className="info" onChange={handleScaleTypeChange} defaultValue="flexible">
-                <option value="flexible">Flexible</option>
-                <option value="shared">Shared</option>
+            <select className="info" onChange={handleScaleTypeChange} defaultValue="ADAPTIVE">
+                <option value="ADAPTIVE">Adaptive</option>
+                <option value="FIXED">Fixed</option>
             </select>
         </div>
     );

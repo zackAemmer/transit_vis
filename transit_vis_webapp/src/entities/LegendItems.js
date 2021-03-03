@@ -24,14 +24,14 @@ class LegendItems {
                     metric_ary.push(this.features[i].properties.SPEED_STD_FULL_DAY);
                     break;
                 case "SPEED_PCT_95":
-                    if (this.scaleType == "shared") {
+                    if (this.scaleType == "FIXED") {
                         metric_ary.push(this.features[i].properties.SPEED_MED_FULL_DAY);
                     } else {
                         metric_ary.push(this.features[i].properties.SPEED_PCT_95_FULL_DAY);
                     };
                     break;
                 case "SPEED_PCT_5":
-                    if (this.scaleType == "shared") {
+                    if (this.scaleType == "FIXED") {
                         metric_ary.push(this.features[i].properties.SPEED_MED_FULL_DAY);
                     } else {
                         metric_ary.push(this.features[i].properties.SPEED_PCT_5_FULL_DAY);
@@ -63,7 +63,7 @@ class LegendItems {
         const grades = [];
         const metric_ary = this.getMetricAry();
 
-        if (this.gradient === "equalIntervals") {
+        if (this.gradient === "EQUAL_INTERVALS") {
             const min = Math.min.apply(Math, metric_ary);
             const max = Math.max.apply(Math, metric_ary);
             const binSize = ((max - min) / this.numBins);
@@ -74,7 +74,7 @@ class LegendItems {
                 current = current+binSize;
             };
             return (grades);
-        } else if (this.gradient === "percentiles") {
+        } else if (this.gradient === "QUANTILES") {
             const min = 0.0;
             const max = 1.0;
             const binSize = ((max - min) / this.numBins);
