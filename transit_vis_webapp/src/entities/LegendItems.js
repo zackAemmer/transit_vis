@@ -18,33 +18,33 @@ class LegendItems {
         for (let i=0; i<this.features.length; i++) {
             switch (this.metric) {
                 case "SPEED_MED":
-                    metric_ary.push(this.features[i].properties.SPEED_MED);
+                    metric_ary.push(this.features[i].properties.SPEED_MED_FULL_DAY);
                     break;
                 case "SPEED_STD":
-                    metric_ary.push(this.features[i].properties.SPEED_STD);
+                    metric_ary.push(this.features[i].properties.SPEED_STD_FULL_DAY);
                     break;
                 case "SPEED_PCT_95":
                     if (this.scaleType == "shared") {
-                        metric_ary.push(this.features[i].properties.SPEED_MED);
+                        metric_ary.push(this.features[i].properties.SPEED_MED_FULL_DAY);
                     } else {
-                        metric_ary.push(this.features[i].properties.SPEED_PCT_95);
+                        metric_ary.push(this.features[i].properties.SPEED_PCT_95_FULL_DAY);
                     };
                     break;
                 case "SPEED_PCT_5":
                     if (this.scaleType == "shared") {
-                        metric_ary.push(this.features[i].properties.SPEED_MED);
+                        metric_ary.push(this.features[i].properties.SPEED_MED_FULL_DAY);
                     } else {
-                        metric_ary.push(this.features[i].properties.SPEED_PCT_5);
+                        metric_ary.push(this.features[i].properties.SPEED_PCT_5_FULL_DAY);
                     };
                     break;
                 case "DEVIATION_MED":
-                    metric_ary.push(this.features[i].properties.DEVIATION_MED);
+                    metric_ary.push(this.features[i].properties.DEVIATION_MED_FULL_DAY);
                     break;
                 case "DEVIATION_STD":
-                    metric_ary.push(this.features[i].properties.DEVIATION_STD);
+                    metric_ary.push(this.features[i].properties.DEVIATION_STD_FULL_DAY);
                     break;
                 case "TRAVERSALS":
-                    metric_ary.push(this.features[i].properties.TRAVERSALS);
+                    metric_ary.push(this.features[i].properties.TRAVERSALS_FULL_DAY);
                     break;
               };
         };

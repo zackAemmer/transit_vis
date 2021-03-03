@@ -52,11 +52,10 @@ const MapControls = (props) => {
                     <option value={`${key}`}>{key}</option>
                 ))};
             </select>
-            <select className="info" onChange={handleTimeChange} defaultValue="allTimes">
-                <option value="allTimes">All Times</option>
-                {/* <option value="AM">Percentiles</option>
-                <option value="MID">Equal Intervals</option>
-                <option value="PM">Equal Intervals</option> */}
+            <select className="info" onChange={handleTimeChange} defaultValue="FULL_DAY">
+                <option value="FULL_DAY">All Times</option>
+                <option value="AM">AM Peak (6-9AM)</option>
+                <option value="PM">PM Peak (4-7PM)</option>
             </select>
             <h4>Visualization</h4>
             <select className="info" onChange={handleGradientChange} defaultValue="percentiles">

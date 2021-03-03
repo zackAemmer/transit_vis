@@ -36,28 +36,78 @@ const PerformanceMap = (props) => {
   const assignColor = (feature, layer) => {
 
     var featureValue;
-    switch (props.metric) {
-      case "SPEED_MED":
-        featureValue = feature.properties.SPEED_MED;
-        break;
-      case "SPEED_STD":
-        featureValue = feature.properties.SPEED_STD;
-        break;
-      case "SPEED_PCT_95":
-        featureValue = feature.properties.SPEED_PCT_95;
-        break;
-      case "SPEED_PCT_5":
-        featureValue = feature.properties.SPEED_PCT_5;
-        break;
-      case "DEVIATION_MED":
-        featureValue = feature.properties.DEVIATION_MED;
-        break;
-      case "DEVIATION_STD":
-        featureValue = feature.properties.DEVIATION_STD;
-        break;
-      case "TRAVERSALS":
-        featureValue = feature.properties.TRAVERSALS;
-        break;
+    if (props.filterTime==='AM') {
+      switch (props.metric) {
+        case "SPEED_MED":
+          featureValue = feature.properties.SPEED_MED_AM;
+          break;
+        case "SPEED_STD":
+          featureValue = feature.properties.SPEED_STD_AM;
+          break;
+        case "SPEED_PCT_95":
+          featureValue = feature.properties.SPEED_PCT_95_AM;
+          break;
+        case "SPEED_PCT_5":
+          featureValue = feature.properties.SPEED_PCT_5_AM;
+          break;
+        case "DEVIATION_MED":
+          featureValue = feature.properties.DEVIATION_MED_AM;
+          break;
+        case "DEVIATION_STD":
+          featureValue = feature.properties.DEVIATION_STD_AM;
+          break;
+        case "TRAVERSALS":
+          featureValue = feature.properties.TRAVERSALS_AM;
+          break;
+      };
+    } else if (props.filterTime==='PM') {
+      switch (props.metric) {
+        case "SPEED_MED":
+          featureValue = feature.properties.SPEED_MED_PM;
+          break;
+        case "SPEED_STD":
+          featureValue = feature.properties.SPEED_STD_PM;
+          break;
+        case "SPEED_PCT_95":
+          featureValue = feature.properties.SPEED_PCT_95_PM;
+          break;
+        case "SPEED_PCT_5":
+          featureValue = feature.properties.SPEED_PCT_5_PM;
+          break;
+        case "DEVIATION_MED":
+          featureValue = feature.properties.DEVIATION_MED_PM;
+          break;
+        case "DEVIATION_STD":
+          featureValue = feature.properties.DEVIATION_STD_PM;
+          break;
+        case "TRAVERSALS":
+          featureValue = feature.properties.TRAVERSALS_PM;
+          break;
+      };
+    } else {
+      switch (props.metric) {
+        case "SPEED_MED":
+          featureValue = feature.properties.SPEED_MED_FULL_DAY;
+          break;
+        case "SPEED_STD":
+          featureValue = feature.properties.SPEED_STD_FULL_DAY;
+          break;
+        case "SPEED_PCT_95":
+          featureValue = feature.properties.SPEED_PCT_95_FULL_DAY;
+          break;
+        case "SPEED_PCT_5":
+          featureValue = feature.properties.SPEED_PCT_5_FULL_DAY;
+          break;
+        case "DEVIATION_MED":
+          featureValue = feature.properties.DEVIATION_MED_FULL_DAY;
+          break;
+        case "DEVIATION_STD":
+          featureValue = feature.properties.DEVIATION_STD_FULL_DAY;
+          break;
+        case "TRAVERSALS":
+          featureValue = feature.properties.TRAVERSALS_FULL_DAY;
+          break;
+      };
     };
 
     const legendItem = legendItemsAry.find((item) => item.isFor(featureValue));

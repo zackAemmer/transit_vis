@@ -17,7 +17,7 @@ var sch_dev_var_ary = [];
 var num_trav_ary = [];
 var date_ary = [];
 var params = {
-    TableName: "KCM_Bus_Routes",
+    TableName: "KCM_Bus_Routes_new",
     ProjectionExpression: "compkey, med_speed_m_s, var_speed_m_s, pct_speed_95_m_s, pct_speed_5_m_s, med_deviation_s, var_deviation_s, num_traversals, date_updated"
 };
 
@@ -53,14 +53,38 @@ class LoadStreetsTask {
             for (let i=0; i<features.length; i++) {
                 const compkey = features[i].properties.COMPKEY;
                 const idx = segment_ary.indexOf(compkey);
-                features[i].properties.SPEED_MED = speed_med_ary[idx].pop() * 2.237; //MPH
-                features[i].properties.SPEED_STD = Math.sqrt(speed_var_ary[idx].pop());
-                features[i].properties.SPEED_PCT_95 = speed_pct_95_ary[idx].pop() * 2.237;
-                features[i].properties.SPEED_PCT_5 = speed_pct_5_ary[idx].pop() * 2.237;
-                features[i].properties.DEVIATION_MED = sch_dev_med_ary[idx].pop();
-                features[i].properties.DEVIATION_STD = Math.sqrt(sch_dev_var_ary[idx].pop());
-                features[i].properties.TRAVERSALS = num_trav_ary[idx].pop();
-                features[i].properties.DATE_UPDATED = date_ary[idx].pop();
+                features[i].properties.SPEED_MED_AM = speed_med_ary[idx].AM.pop() * 2.237; //MPH
+                features[i].properties.SPEED_MED_PM = speed_med_ary[idx].PM.pop() * 2.237; //MPH
+                features[i].properties.SPEED_MED_FULL_DAY = speed_med_ary[idx].FULL_DAY.pop() * 2.237; //MPH
+
+                features[i].properties.SPEED_STD_AM = Math.sqrt(speed_var_ary[idx].AM.pop());
+                features[i].properties.SPEED_STD_PM = Math.sqrt(speed_var_ary[idx].PM.pop());
+                features[i].properties.SPEED_STD_FULL_DAY = Math.sqrt(speed_var_ary[idx].FULL_DAY.pop());
+
+                features[i].properties.SPEED_PCT_95_AM = speed_pct_95_ary[idx].AM.pop() * 2.237;
+                features[i].properties.SPEED_PCT_95_PM = speed_pct_95_ary[idx].PM.pop() * 2.237;
+                features[i].properties.SPEED_PCT_95_FULL_DAY = speed_pct_95_ary[idx].FULL_DAY.pop() * 2.237;
+
+                features[i].properties.SPEED_PCT_5_AM = speed_pct_5_ary[idx].AM.pop() * 2.237;
+                features[i].properties.SPEED_PCT_5_PM = speed_pct_5_ary[idx].PM.pop() * 2.237;
+                features[i].properties.SPEED_PCT_5_FULL_DAY = speed_pct_5_ary[idx].FULL_DAY.pop() * 2.237;
+
+                features[i].properties.DEVIATION_MED_AM = sch_dev_med_ary[idx].AM.pop();
+                features[i].properties.DEVIATION_MED_PM = sch_dev_med_ary[idx].PM.pop();
+                features[i].properties.DEVIATION_MED_FULL_DAY = sch_dev_med_ary[idx].FULL_DAY.pop();
+
+                features[i].properties.DEVIATION_STD_AM = Math.sqrt(sch_dev_var_ary[idx].AM.pop());
+                features[i].properties.DEVIATION_STD_PM = Math.sqrt(sch_dev_var_ary[idx].PM.pop());
+                features[i].properties.DEVIATION_STD_FULL_DAY = Math.sqrt(sch_dev_var_ary[idx].FULL_DAY.pop());
+
+                features[i].properties.TRAVERSALS_AM = num_trav_ary[idx].AM.pop();
+                features[i].properties.TRAVERSALS_PM = num_trav_ary[idx].PM.pop();
+                features[i].properties.TRAVERSALS_FULL_DAY = num_trav_ary[idx].FULL_DAY.pop();
+
+                features[i].properties.DATE_UPDATED_AM = date_ary[idx].AM.pop();
+                features[i].properties.DATE_UPDATED_PM = date_ary[idx].PM.pop();
+                features[i].properties.DATE_UPDATED_FULL_DAY = date_ary[idx].FULL_DAY.pop();
+
             };
             this.setState(features);
         };

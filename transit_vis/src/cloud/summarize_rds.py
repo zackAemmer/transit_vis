@@ -422,59 +422,69 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
         dynamodb_table: A boto3 Table pointing to a dynamodb table that has been
             initialized to contain the same segments as to_upload.
         to_upload: A Pandas Dataframe to be uploaded to dynamodb containing
-            seg ids, and their average speeds.
+            seg ids, and their average data.
         end_time: An epoch time integer that represents the date to assign the
             values to.
     """
     # Get formatted date to assign to speed data
     collection_date = datetime.utcfromtimestamp(end_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y-%H:%M')
+    # Create column for hour of day when data point was collected
+    to_upload['hour_of_day'] = pd.to_datetime(to_upload['locationtime'], unit='s').dt.tz_localize('UTC').dt.tz_convert(tz='America/Los_Angeles').dt.strftime('%-H').astype(int)
 
-    # Aggregate the observed bus speeds by their nearest segment ids
-    to_upload = to_upload[['seg_compkey', 'seg_route_id', 'speed_m_s', 'deviation_change_s', 'seg_length']].copy()
-    to_upload.dropna(inplace=True)
-    to_upload = to_upload.groupby(['seg_compkey']).agg(['median', 'var', 'count', percentile(95), percentile(5)]).reset_index()
-    to_upload = to_upload.loc[to_upload[('seg_route_id', 'count')] > 1]
-    to_upload = to_upload.to_dict(orient='records')
+    # 3 Table updates; one am, one pm, one with all data
+    time_periods = ['AM','PM','FULL_DAY']
+    times = [[6,9], [16,19], [0,23]] #6-9am, 4-7pm
+    for i, time_range in enumerate(times):
+        print(f"{time_range[0]}-{time_range[1]}{time_periods[i]}...{i+1}/{len(time_periods)}")
+        # Filter by the time period
+        filtered_to_upload = to_upload[((to_upload['hour_of_day'] > time_range[0]) & (to_upload['hour_of_day'] < time_range[1]))]
 
-    # Update each route/segment id in the dynamodb with its new value
-    for segment in to_upload:
-        dynamodb_table.update_item(
-            Key={
-                'compkey': segment[('seg_compkey', '')]
-            },
-            UpdateExpression="SET " \
-                "med_speed_m_s=list_append(if_not_exists(med_speed_m_s, :empty_list), :med_speed_val)," \
-                "var_speed_m_s=list_append(if_not_exists(var_speed_m_s, :empty_list), :var_speed_val)," \
-                "pct_speed_95_m_s=list_append(if_not_exists(pct_speed_95_m_s, :empty_list), :pct_speed_95_val)," \
-                "pct_speed_5_m_s=list_append(if_not_exists(pct_speed_5_m_s, :empty_list), :pct_speed_5_val)," \
-                "med_deviation_s=list_append(if_not_exists(med_deviation_s, :empty_list), :med_deviation_val)," \
-                "var_deviation_s=list_append(if_not_exists(var_deviation_s, :empty_list), :var_deviation_val)," \
-                "num_traversals=list_append(if_not_exists(num_traversals, :empty_list), :count_val)," \
-                "date_updated=list_append(if_not_exists(date_updated, :empty_list), :date_val)",
-            ExpressionAttributeValues={
-                ':med_speed_val': [str(segment[('speed_m_s', 'median')])],
-                ':var_speed_val': [str(segment[('speed_m_s', 'var')])],
-                ':pct_speed_95_val': [str(segment[('speed_m_s', 'pct_95')])],
-                ':pct_speed_5_val': [str(segment[('speed_m_s', 'pct_5')])],
-                ':med_deviation_val': [str(segment[('deviation_change_s', 'median')])],
-                ':var_deviation_val': [str(segment[('deviation_change_s', 'var')])],
-                ':count_val': [str(segment[('speed_m_s', 'count')])],
-                ':date_val': [str(collection_date)],
-                ':empty_list': []})
-    # # Remove the first item in the list for the attribute of each updated segment
-    # for segment in to_upload:
-    #     dynamodb_table.update_item(
-    #         Key={
-    #             'compkey': segment[('seg_compkey', '')]
-    #         },
-    #         UpdateExpression="REMOVE " \
-    #             "med_speed_m_s[0]," \
-    #             "var_speed_m_s[0]," \
-    #             "pct_speed_95_m_s[0]," \
-    #             "pct_speed_5_m_s[0]," \
-    #             "med_deviation_s[0]," \
-    #             "var_deviation_s[0]," \
-    #             "num_traversals[0]")
+        # Aggregate the observed bus speeds by their nearest segment ids
+        filtered_to_upload = filtered_to_upload[['seg_compkey', 'seg_route_id', 'speed_m_s', 'deviation_change_s', 'seg_length']].copy()
+        filtered_to_upload.dropna(inplace=True)
+        filtered_to_upload = filtered_to_upload.groupby(['seg_compkey']).agg(['median', 'var', 'count', percentile(95), percentile(5)]).reset_index()
+        filtered_to_upload = filtered_to_upload.loc[filtered_to_upload[('seg_route_id', 'count')] > 1]
+        filtered_to_upload = filtered_to_upload.to_dict(orient='records')
+
+        # Update each route/segment id in the dynamodb with its new value
+        for segment in filtered_to_upload:
+            dynamodb_table.update_item(
+                Key={
+                    'compkey': segment[('seg_compkey', '')]
+                },
+                UpdateExpression=f"SET " \
+                    f"med_speed_m_s.{time_periods[i]}=list_append(if_not_exists(med_speed_m_s.{time_periods[i]}, :empty_list), :med_speed_val)," \
+                    f"var_speed_m_s.{time_periods[i]}=list_append(if_not_exists(var_speed_m_s.{time_periods[i]}, :empty_list), :var_speed_val)," \
+                    f"pct_speed_95_m_s.{time_periods[i]}=list_append(if_not_exists(pct_speed_95_m_s.{time_periods[i]}, :empty_list), :pct_speed_95_val)," \
+                    f"pct_speed_5_m_s.{time_periods[i]}=list_append(if_not_exists(pct_speed_5_m_s.{time_periods[i]}, :empty_list), :pct_speed_5_val)," \
+                    f"med_deviation_s.{time_periods[i]}=list_append(if_not_exists(med_deviation_s.{time_periods[i]}, :empty_list), :med_deviation_val)," \
+                    f"var_deviation_s.{time_periods[i]}=list_append(if_not_exists(var_deviation_s.{time_periods[i]}, :empty_list), :var_deviation_val)," \
+                    f"num_traversals.{time_periods[i]}=list_append(if_not_exists(num_traversals.{time_periods[i]}, :empty_list), :count_val)," \
+                    f"date_updated.{time_periods[i]}=list_append(if_not_exists(date_updated.{time_periods[i]}, :empty_list), :date_val)",
+                ExpressionAttributeValues={
+                    ':med_speed_val': [str(segment[('speed_m_s', 'median')])],
+                    ':var_speed_val': [str(segment[('speed_m_s', 'var')])],
+                    ':pct_speed_95_val': [str(segment[('speed_m_s', 'pct_95')])],
+                    ':pct_speed_5_val': [str(segment[('speed_m_s', 'pct_5')])],
+                    ':med_deviation_val': [str(segment[('deviation_change_s', 'median')])],
+                    ':var_deviation_val': [str(segment[('deviation_change_s', 'var')])],
+                    ':count_val': [str(segment[('speed_m_s', 'count')])],
+                    ':date_val': [str(collection_date)],
+                    ':empty_list': []})
+        # # Remove the first item in the list for the attribute of each updated segment
+        # for segment in to_upload:
+        #     dynamodb_table.update_item(
+        #         Key={
+        #             'compkey': segment[('seg_compkey', '')]
+        #         },
+        #         UpdateExpression="REMOVE " \
+        #             "med_speed_m_s[0]," \
+        #             "var_speed_m_s[0]," \
+        #             "pct_speed_95_m_s[0]," \
+        #             "pct_speed_5_m_s[0]," \
+        #             "med_deviation_s[0]," \
+        #             "var_deviation_s[0]," \
+        #             "num_traversals[0]")
     return
 
 def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, upload):
@@ -516,6 +526,7 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
     print("Querying data from RDS (~5mins if no limit specified)...")
     all_daily_results = []
     end_time = round(datetime.now().timestamp())
+    # Break up the query into {split_data} pieces
     for i in range(0, split_data):
         start_time = int(round(end_time - (24*60*60/split_data), 0))
         daily_results = get_results_by_time(conn, start_time, end_time, rds_limit)
@@ -550,7 +561,7 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
 
     # Upload to dynamoDB
     if upload:
-        print("Uploading aggregated segment data to dynamoDB...")
+        print("Aggregating and Uploading segment data to dynamoDB...")
         table = connect_to_dynamo_table(dynamodb_table_name)
         upload_to_dynamo(table, daily_results, start_time)
 
@@ -558,7 +569,7 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
 
 if __name__ == "__main__":
     NUM_SEGMENTS_UPDATED = summarize_rds(
-        dynamodb_table_name='KCM_Bus_Routes',
+        dynamodb_table_name='KCM_Bus_Routes_new',
         rds_limit=0,
         split_data=3,
         update_gtfs=True,

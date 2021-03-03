@@ -13,14 +13,14 @@ const TransitVis = () => {
   // Variables that define site state; (change as user interacts with site)
   const [streets, setStreets] = useState([]);
   const [filterRoute, setFilterRoute] = useState("allRoutes");
-  const [filterTime, setFilterTime] = useState("allTimes");
+  const [filterTime, setFilterTime] = useState("FULL_DAY");
   const [metric, setMetric] = useState("SPEED_MED");
   const [gradient, setGradient] = useState("percentiles");
   const [bins, setBins] = useState("6");
   const [scaleType, setScaleType] = useState("flexible");
 
   // Constant list of bins that updates with state and gets passed down
-  const legendItems = new LegendItems(streets, metric, gradient, bins, scaleType);
+  const legendItems = new LegendItems(streets, metric, gradient, bins, scaleType, filterTime);
 
   // Get the street data from dynamodb and store it in the state variable
   function load() {
@@ -54,6 +54,7 @@ const TransitVis = () => {
               legendItems={legendItems}
               metric={metric}
               filterRoute={filterRoute}
+              filterTime={filterTime}
             />
             <MapControls
               metric={metric}

@@ -113,14 +113,14 @@ def upload_segments_to_dynamo(dynamodb_resource, table_name, segments):
             batch.put_item(
                 Item={
                     'compkey': segment['properties']['COMPKEY'],
-                    'med_speed_m_s': [],
-                    'var_speed_m_s': [],
-                    'pct_speed_95_m_s': [],
-                    'pct_speed_5_m_s': [],
-                    'med_deviation_s': [],
-                    'var_deviation_s': [],
-                    'num_traversals': [],
-                    'date_updated': []
+                    'med_speed_m_s': {'AM':[],'PM':[],'FULL_DAY':[]},
+                    'var_speed_m_s': {'AM':[],'PM':[],'FULL_DAY':[]},
+                    'pct_speed_95_m_s': {'AM':[],'PM':[],'FULL_DAY':[]},
+                    'pct_speed_5_m_s': {'AM':[],'PM':[],'FULL_DAY':[]},
+                    'med_deviation_s': {'AM':[],'PM':[],'FULL_DAY':[]},
+                    'var_deviation_s': {'AM':[],'PM':[],'FULL_DAY':[]},
+                    'num_traversals': {'AM':[],'PM':[],'FULL_DAY':[]},
+                    'date_updated': {'AM':[],'PM':[],'FULL_DAY':[]}
                 })
     return 1
 
@@ -164,5 +164,5 @@ if __name__ == "__main__":
     # Main program starts here
     NUM_FEATURES_UPLOADED = initialize_dynamodb(
         './transit_vis/data/streets_0002buffer',
-        'KCM_Bus_Routes')
+        'KCM_Bus_Routes_new')
     print(f"{NUM_FEATURES_UPLOADED} features in data uploaded to dynamodb")
