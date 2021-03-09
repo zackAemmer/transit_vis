@@ -471,20 +471,21 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
                     ':count_val': [str(segment[('speed_m_s', 'count')])],
                     ':date_val': [str(collection_date)],
                     ':empty_list': []})
-        # # Remove the first item in the list for the attribute of each updated segment
-        # for segment in to_upload:
-        #     dynamodb_table.update_item(
-        #         Key={
-        #             'compkey': segment[('seg_compkey', '')]
-        #         },
-        #         UpdateExpression="REMOVE " \
-        #             "med_speed_m_s[0]," \
-        #             "var_speed_m_s[0]," \
-        #             "pct_speed_95_m_s[0]," \
-        #             "pct_speed_5_m_s[0]," \
-        #             "med_deviation_s[0]," \
-        #             "var_deviation_s[0]," \
-        #             "num_traversals[0]")
+        # Remove the first item in the list for the attribute of each updated segment
+        for segment in to_upload:
+            dynamodb_table.update_item(
+                Key={
+                    'compkey': segment[('seg_compkey', '')]
+                },
+                UpdateExpression=f"REMOVE " \
+                    f"med_speed_m_s.{time_periods[i]}[0]," \
+                    f"var_speed_m_s.{time_periods[i]}[0]," \
+                    f"pct_speed_95_m_s.{time_periods[i]}[0]," \
+                    f"pct_speed_5_m_s.{time_periods[i]}[0]," \
+                    f"med_deviation_s.{time_periods[i]}[0]," \
+                    f"var_deviation_s.{time_periods[i]}[0]," \
+                    f"num_traversals.{time_periods[i]}[0]," \
+                    f"date_updated.{time_periods[i]}[0]")
     return
 
 def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, upload):
