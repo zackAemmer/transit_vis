@@ -1,12 +1,12 @@
 import React from 'react';
-import test from '../images/about_image.JPG';
+import about_image from '../images/about_image.JPG';
 
 
 const About = () => {
     return (
         <div className="about-page">
             <div className="about-image">
-                <img src={test} alt="Sample image of main app screen"/>
+                <img src={about_image} alt="Sample image of main app screen"/>
             </div>
             <div className="about-text">
                 <h3>About</h3>
