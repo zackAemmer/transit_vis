@@ -82,8 +82,8 @@ def create_dynamo_table(dynamodb_resource, table_name):
             {'AttributeName': 'compkey', 'AttributeType': 'N'}
         ],
         ProvisionedThroughput={
-            'ReadCapacityUnits': 20,
-            'WriteCapacityUnits': 20}
+            'ReadCapacityUnits': 25,
+            'WriteCapacityUnits': 25}
     )
     # Wait until the table exists.
     table.meta.client.get_waiter('table_exists').wait(TableName=table_name)
@@ -113,14 +113,14 @@ def upload_segments_to_dynamo(dynamodb_resource, table_name, segments):
             batch.put_item(
                 Item={
                     'compkey': segment['properties']['COMPKEY'],
-                    'med_speed_m_s': {'AM':[],'PM':[],'FULL_DAY':[]},
-                    'var_speed_m_s': {'AM':[],'PM':[],'FULL_DAY':[]},
-                    'pct_speed_95_m_s': {'AM':[],'PM':[],'FULL_DAY':[]},
-                    'pct_speed_5_m_s': {'AM':[],'PM':[],'FULL_DAY':[]},
-                    'med_deviation_s': {'AM':[],'PM':[],'FULL_DAY':[]},
-                    'var_deviation_s': {'AM':[],'PM':[],'FULL_DAY':[]},
-                    'num_traversals': {'AM':[],'PM':[],'FULL_DAY':[]},
-                    'date_updated': {'AM':[],'PM':[],'FULL_DAY':[]}
+                    'med_speed_m_s': {'AM':'','PM':'','FULL_DAY':''},
+                    'var_speed_m_s': {'AM':'','PM':'','FULL_DAY':''},
+                    'pct_speed_95_m_s': {'AM':'','PM':'','FULL_DAY':''},
+                    'pct_speed_5_m_s': {'AM':'','PM':'','FULL_DAY':''},
+                    'med_deviation_s': {'AM':'','PM':'','FULL_DAY':''},
+                    'var_deviation_s': {'AM':'','PM':'','FULL_DAY':''},
+                    'num_traversals': {'AM':'','PM':'','FULL_DAY':''},
+                    'date_updated': {'AM':'','PM':'','FULL_DAY':''}
                 })
     return 1
 
@@ -135,7 +135,7 @@ def initialize_dynamodb(geojson_name, dynamodb_table_name):
     Args:
         geojson_name: Path to the geojson file that is to be uploaded. Do not
             include file type ending (.geojson etc.).
-        table_name: A string containing the name for the segments table.
+        dynamodb_table_name: A string containing the name for the segments table.
 
     Returns:
         An integer of the number of features that were uploaded to the
@@ -163,6 +163,6 @@ def initialize_dynamodb(geojson_name, dynamodb_table_name):
 if __name__ == "__main__":
     # Main program starts here
     NUM_FEATURES_UPLOADED = initialize_dynamodb(
-        './transit_vis/data/streets_0002buffer',
-        'KCM_Bus_Routes_new')
+        geojson_name='./transit_vis/data/streets_0001buffer',
+        dynamodb_table_name='KCM_Bus_Routes')
     print(f"{NUM_FEATURES_UPLOADED} features in data uploaded to dynamodb")

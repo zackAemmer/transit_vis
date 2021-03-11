@@ -306,18 +306,15 @@ def assign_results_to_segments(kcm_routes, daily_results):
     feature_lengths = []
     compkeys = []
     route_ids = []
-    vis_ids = []
     for feature in kcm_routes['features']:
         assert feature['geometry']['type'] == 'MultiLineString'
         for coord_pair in feature['geometry']['coordinates'][0]:
             feature_coords.append(coord_pair)
-            feature_lengths.append(feature['properties']['SEGLENGTH'])
+            feature_lengths.append(feature['properties']['seg_length'])
             compkeys.append(feature['properties']['COMPKEY'])
-            route_ids.append(feature['properties']['join_ROUTE_ID'])
-            vis_ids.append(feature['properties']['vis_id'])
+            route_ids.append(feature['properties']['ROUTE_ID'])
     segments = pd.DataFrame()
     segments['route_id'] = route_ids
-    segments['vis_id'] = vis_ids
     segments['compkey'] = compkeys
     segments['length'] = feature_lengths
     segments['lat'] = np.array(feature_coords)[:,1] # Not sure why, but these are lon, lat in the geojson
@@ -338,7 +335,6 @@ def assign_results_to_segments(kcm_routes, daily_results):
             route_results['seg_length'] = np.array(result_segs['length'])
             route_results['seg_compkey'] = np.array(result_segs['compkey'])
             route_results['seg_route_id'] = np.array(result_segs['route_id'])
-            route_results['seg_vis_id'] = np.array(result_segs['vis_id'])
             to_upload = to_upload.append(route_results)
         else:
             untracked.append(route)
@@ -375,9 +371,8 @@ def assign_results_to_segments(kcm_routes, daily_results):
         'route_short_name',
         # From joining nearest kcm segments
         'seg_compkey',
-        'seg_length', # Units on this are feet
+        'seg_length', # Should be in meters
         'seg_route_id',
-        'seg_vis_id',
         'seg_lat',
         'seg_lon']
     to_upload = to_upload[columns_to_keep]
@@ -453,42 +448,27 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
                     'compkey': segment[('seg_compkey', '')]
                 },
                 UpdateExpression=f"SET " \
-                    f"med_speed_m_s.{time_periods[i]}=list_append(if_not_exists(med_speed_m_s.{time_periods[i]}, :empty_list), :med_speed_val)," \
-                    f"var_speed_m_s.{time_periods[i]}=list_append(if_not_exists(var_speed_m_s.{time_periods[i]}, :empty_list), :var_speed_val)," \
-                    f"pct_speed_95_m_s.{time_periods[i]}=list_append(if_not_exists(pct_speed_95_m_s.{time_periods[i]}, :empty_list), :pct_speed_95_val)," \
-                    f"pct_speed_5_m_s.{time_periods[i]}=list_append(if_not_exists(pct_speed_5_m_s.{time_periods[i]}, :empty_list), :pct_speed_5_val)," \
-                    f"med_deviation_s.{time_periods[i]}=list_append(if_not_exists(med_deviation_s.{time_periods[i]}, :empty_list), :med_deviation_val)," \
-                    f"var_deviation_s.{time_periods[i]}=list_append(if_not_exists(var_deviation_s.{time_periods[i]}, :empty_list), :var_deviation_val)," \
-                    f"num_traversals.{time_periods[i]}=list_append(if_not_exists(num_traversals.{time_periods[i]}, :empty_list), :count_val)," \
-                    f"date_updated.{time_periods[i]}=list_append(if_not_exists(date_updated.{time_periods[i]}, :empty_list), :date_val)",
+                    f"med_speed_m_s.{time_periods[i]}= :med_speed_val," \
+                    f"var_speed_m_s.{time_periods[i]}= :var_speed_val," \
+                    f"pct_speed_95_m_s.{time_periods[i]}= :pct_speed_95_val," \
+                    f"pct_speed_5_m_s.{time_periods[i]}= :pct_speed_5_val," \
+                    f"med_deviation_s.{time_periods[i]}= :med_deviation_val," \
+                    f"var_deviation_s.{time_periods[i]}= :var_deviation_val," \
+                    f"num_traversals.{time_periods[i]}= :count_val," \
+                    f"date_updated.{time_periods[i]}= :date_val",
                 ExpressionAttributeValues={
-                    ':med_speed_val': [str(segment[('speed_m_s', 'median')])],
-                    ':var_speed_val': [str(segment[('speed_m_s', 'var')])],
-                    ':pct_speed_95_val': [str(segment[('speed_m_s', 'pct_95')])],
-                    ':pct_speed_5_val': [str(segment[('speed_m_s', 'pct_5')])],
-                    ':med_deviation_val': [str(segment[('deviation_change_s', 'median')])],
-                    ':var_deviation_val': [str(segment[('deviation_change_s', 'var')])],
-                    ':count_val': [str(segment[('speed_m_s', 'count')])],
-                    ':date_val': [str(collection_date)],
-                    ':empty_list': []})
-        # Remove the first item in the list for the attribute of each updated segment
-        for segment in to_upload:
-            dynamodb_table.update_item(
-                Key={
-                    'compkey': segment[('seg_compkey', '')]
-                },
-                UpdateExpression=f"REMOVE " \
-                    f"med_speed_m_s.{time_periods[i]}[0]," \
-                    f"var_speed_m_s.{time_periods[i]}[0]," \
-                    f"pct_speed_95_m_s.{time_periods[i]}[0]," \
-                    f"pct_speed_5_m_s.{time_periods[i]}[0]," \
-                    f"med_deviation_s.{time_periods[i]}[0]," \
-                    f"var_deviation_s.{time_periods[i]}[0]," \
-                    f"num_traversals.{time_periods[i]}[0]," \
-                    f"date_updated.{time_periods[i]}[0]")
+                    ':med_speed_val': ''+str(segment[('speed_m_s', 'median')]),
+                    ':var_speed_val': ''+str(segment[('speed_m_s', 'var')]),
+                    ':pct_speed_95_val': ''+str(segment[('speed_m_s', 'pct_95')]),
+                    ':pct_speed_5_val': ''+str(segment[('speed_m_s', 'pct_5')]),
+                    ':med_deviation_val': ''+str(segment[('deviation_change_s', 'median')]),
+                    ':var_deviation_val': ''+str(segment[('deviation_change_s', 'var')]),
+                    ':count_val': ''+str(segment[('speed_m_s', 'count')]),
+                    ':date_val': ''+str(collection_date)}
+            )
     return
 
-def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, upload):
+def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, upload):
     """Queries 24hrs of data from RDS, calculates speeds, and uploads them.
 
     Runs daily to take 24hrs worth of data stored in the data warehouse
@@ -500,6 +480,8 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
     download the speeds and display them using the same geojson file once again.
 
     Args:
+        geojson_name: Path to the geojson file that is to be uploaded. Do not
+            include file type ending (.geojson etc.).
         dynamodb_table_name: The name of the table containing the segments that
             speeds will be matched and uploaded to.
         rds_limit: An integer specifying the maximum number of rows to query.
@@ -543,8 +525,9 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
         return 0
     daily_results = pd.concat(all_daily_results)
 
+    print(f"Loading route segments from {geojson_name}")
     # Load the route segments shapefile
-    with open('./transit_vis/data/streets_routes_0002buffer.geojson') as shapefile:
+    with open(f'{geojson_name}.geojson', 'r') as shapefile:
         kcm_routes = json.load(shapefile)
 
     # Find the closest segment w/matching route for each speed in daily results
@@ -570,10 +553,11 @@ def summarize_rds(dynamodb_table_name, rds_limit, split_data, update_gtfs, save_
 
 if __name__ == "__main__":
     NUM_SEGMENTS_UPDATED = summarize_rds(
-        dynamodb_table_name='KCM_Bus_Routes_new',
+        geojson_name='./transit_vis/data/streets_routes_0001buffer',
+        dynamodb_table_name='KCM_Bus_Routes',
         rds_limit=0,
         split_data=3,
-        update_gtfs=True,
+        update_gtfs=False,
         save_locally=False,
         upload=True)
     print(f"Number of tracks: {NUM_SEGMENTS_UPDATED}")

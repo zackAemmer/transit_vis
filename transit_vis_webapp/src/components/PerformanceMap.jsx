@@ -36,7 +36,9 @@ const PerformanceMap = (props) => {
   const assignColor = (feature, layer) => {
 
     var featureValue;
+    var dateUpdated;
     if (props.filterTime==='AM') {
+      dateUpdated = feature.properties.DATE_UPDATED_AM;
       switch (props.metric) {
         case "SPEED_MED":
           featureValue = feature.properties.SPEED_MED_AM;
@@ -61,6 +63,7 @@ const PerformanceMap = (props) => {
           break;
       };
     } else if (props.filterTime==='PM') {
+      dateUpdated = feature.properties.DATE_UPDATED_PM;
       switch (props.metric) {
         case "SPEED_MED":
           featureValue = feature.properties.SPEED_MED_PM;
@@ -85,6 +88,7 @@ const PerformanceMap = (props) => {
           break;
       };
     } else {
+      dateUpdated = feature.properties.DATE_UPDATED_FULL_DAY;
       switch (props.metric) {
         case "SPEED_MED":
           featureValue = feature.properties.SPEED_MED_FULL_DAY;
@@ -116,9 +120,10 @@ const PerformanceMap = (props) => {
       layer.options.color = feature.properties.color;
     };
 
-    const name = feature.properties.STNAME_ORD;
+    const name = feature.properties.FULLNAME;
     const metric = Math.round(featureValue * 10) / 10;
-    layer.bindPopup(`${name}: ${metric}`);
+    const update_date = dateUpdated;
+    layer.bindPopup(`Street Name: ${name}:<br> Metric Value: ${metric}<br> Last Updated: ${dateUpdated}PST`);
   };
 
   return (
