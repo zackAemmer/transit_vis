@@ -140,6 +140,7 @@ const PerformanceMap = (props) => {
           filter={checkFilter}
           onEachFeature={assignColor}
           className="geoJSON"
+          preferCanvas={true}
         />
         <Legend legendItems={props.legendItems}/>
       </MapContainer>

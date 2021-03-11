@@ -11,11 +11,13 @@
     "colorbrewer": "^1.4.0",
     "d3-array": "^2.11.0",
     "d3-scale-chromatic": "^2.0.0",
+    "d3-svg-overlay-leaflet": "^3.0.0",
     "leaflet": "^1.7.1",
     "react": "^17.0.1",
     "react-bootstrap": "^1.4.3",
     "react-dom": "^17.0.1",
     "react-leaflet": "^3.1.0",
+    "react-leaflet-d3-svg-overlay": "^1.1.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.2"
   },

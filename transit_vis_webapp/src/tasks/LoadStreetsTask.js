@@ -44,9 +44,9 @@ class LoadStreetsTask {
                 params.ExclusiveStartKey = data.LastEvaluatedKey;
                 docClient.scan(params, onScan);
             } else {
-                console.log("Scanned Database");
-                console.log(speed_med_ary);
+                console.log("Scanned Database; adding data to features");
                 processData();
+                console.log("Finished adding data to features");
             };
         };
 
