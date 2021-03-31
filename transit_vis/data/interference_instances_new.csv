@@ -1,0 +1,55 @@
+"","corridor_id","corridor_name","vehicle_id","int_location_tyoe","lat","lon","mode","int_start_time","int_stop_time","first_name","difference","report_date"
+"1",2,"Pike;
+3rd to 9th","7151","In a driving lane","47.610556","-122.335928","Construction",2021-03-05 07:19:24,2021-03-05 07:19:26,"Travis",2,2021-03-05
+"2",2,"Pike;
+3rd to 9th","9647","In a driving lane","47.610657","-122.335785","Construction",2021-03-05 07:36:34,2021-03-05 07:36:36,"Travis",2,2021-03-05
+"3",2,"Pike;
+3rd to 9th","4508","In a driving lane","47.610609","-122.336568","Construction",2021-03-05 07:38:58,2021-03-05 07:39:00,"Travis",2,2021-03-05
+"4",6,"University Way;
+Campus to 45th","6895","In a driving lane","47.65853","-122.31327","Service Vehicle",2021-03-08 07:48:09,2021-03-08 07:48:11,"Andrew",2,2021-03-08
+"5",6,"University Way;
+Campus to 45th","8048","In a driving lane","47.658636","-122.31327","Pedestrian",2021-03-08 08:04:34,2021-03-08 08:04:38,"Andrew",4,2021-03-08
+"6",6,"University Way;
+Campus to 45th","8112","In a driving lane","47.658654","-122.313273","Service Vehicle",2021-03-08 08:05:21,2021-03-08 08:05:26,"Andrew",5,2021-03-08
+"7",6,"University Way;
+Campus to 45th","8027","In a driving lane","47.65857","-122.313278","Service Vehicle",2021-03-08 08:30:14,2021-03-08 08:30:16,"Andrew",2,2021-03-08
+"8",6,"University Way;
+Campus to 45th","8027","In a driving lane","47.659067","-122.313273","Passenger Vehicle",2021-03-08 09:15:44,2021-03-08 09:15:50,"Andrew",6,2021-03-08
+"9",6,"University Way;
+Campus to 45th","8027","In a driving lane","47.659522","-122.313234","Passenger Vehicle",2021-03-08 09:15:37,2021-03-08 09:15:39,"Carl",2,2021-03-08
+"10",4,"E Olive/E John;
+Denny to 10th","8063","In a driving lane","47.619786","-122.323488","Pedestrian",2021-03-08 15:42:43,2021-03-08 15:42:48,"Ryan",5,2021-03-08
+"11",4,"E Olive/E John;
+Denny to 10th","4327","In a driving lane","47.619702","-122.323309","Passenger Vehicle",2021-03-08 16:10:37,2021-03-08 16:10:44,"Ryan",7,2021-03-09
+"12",4,"E Olive/E John;
+Denny to 10th","7046","In a driving lane","47.619672","-122.323321","Pedestrian",2021-03-08 16:37:14,2021-03-08 16:37:20,"Ryan",6,2021-03-09
+"13",4,"E Olive/E John;
+Denny to 10th","4370",NA,"47.619734","-122.32352","Pedestrian",2021-03-08 16:48:52,2021-03-08 16:48:57,"Ryan",5,2021-03-09
+"14",4,"E Olive/E John;
+Denny to 10th","6978","In a driving lane","47.619691","-122.323385","Pedestrian",2021-03-08 16:53:32,2021-03-08 16:53:36,"Ryan",4,2021-03-09
+"15",5,"9th Ave;
+Alder to Columbia","4370","In a driving lane","47.605593","-122.324885","Service Vehicle",2021-03-10 09:14:04,2021-03-10 09:14:14,"Travis",10,2021-03-10
+"16",4,"E Olive/E John;
+Denny to 10th","6926","In a driving lane","47.619876","-122.322648","Pedestrian",2021-03-10 15:29:47,2021-03-10 15:29:49,"Carl",2,2021-03-10
+"17",4,"E Olive/E John;
+Denny to 10th","8112","In a driving lane","47.619875","-122.319647","Pedestrian",2021-03-10 15:31:51,2021-03-10 15:32:03,"Ryan",12,2021-03-10
+"18",4,"E Olive/E John;
+Denny to 10th","4337","In a driving lane","47.619845","-122.3233","Pedestrian",2021-03-10 16:14:57,2021-03-10 16:14:59,"Carl",2,2021-03-11
+"19",4,"E Olive/E John;
+Denny to 10th","8031","At a bus stop","47.619531","-122.324759","Pedestrian",2021-03-10 17:10:19,2021-03-10 17:11:24,"Travis",65,2021-03-11
+"20",2,"Pike;
+3rd to 9th","8142","In a transit bus only lane","47.612427","-122.331619","Service Vehicle",2021-03-12 07:04:01,2021-03-12 07:04:57,"Younis",56,2021-03-12
+"21",2,"Pike;
+3rd to 9th","7441","In a transit bus only lane","47.610498","-122.335904","Pedestrian",2021-03-12 07:19:01,2021-03-12 07:19:04,"Ryan",3,2021-03-12
+"22",2,"Pike;
+3rd to 9th","7196","Other","47.612097","-122.332364",NA,2021-03-12 08:06:11,2021-03-12 08:06:20,"Younis",9,2021-03-12
+"23",2,"Pike;
+3rd to 9th","9641","In a driving lane","47.612287","-122.33192","Bicylist",2021-03-12 08:26:14,2021-03-12 08:26:29,"Younis",15,2021-03-12
+"24",3,"Westlake;
+Denny to Mercer","303","In a transit bus only lane","47.620656","-122.338377","Small Delivery Vehicle",2021-03-16 07:42:00,2021-03-16 07:43:00,"Ryan",60,2021-03-16
+"25",10,"108th Ave;
+4th to 12th (Bellevue)","7425","In a driving lane","47.614613","-122.196115","Construction",2021-03-19 08:00:31,2021-03-19 08:00:36,"Younis",5,2021-03-19
+"26",10,"108th Ave;
+4th to 12th (Bellevue)","41514","In a driving lane","47.614716","-122.196139","Construction",2021-03-19 08:35:39,2021-03-19 08:35:43,"Younis",4,2021-03-19
+"27",10,"108th Ave;
+4th to 12th (Bellevue)","9672","In a driving lane","47.614481","-122.196253","Construction",2021-03-19 09:21:28,2021-03-19 09:21:34,"Younis",6,2021-03-19

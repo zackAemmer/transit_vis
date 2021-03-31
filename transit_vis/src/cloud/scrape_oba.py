@@ -21,7 +21,7 @@ def connect_to_rds():
 
 def get_epoch_and_pst_24hr():
     utc = datetime.utcnow()
-    pst = timedelta(hours=8)
+    pst = timedelta(hours=7)
     current_hour = (utc - pst).hour
     epoch = round(utc.timestamp())
     return current_hour, epoch

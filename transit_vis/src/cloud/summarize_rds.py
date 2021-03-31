@@ -124,11 +124,20 @@ def get_results_by_time(conn, start_time, end_time, rds_limit):
     """
     # Database has index on locationtime attribute
     if rds_limit > 0:
-        query_text = f"SELECT * FROM active_trips_study WHERE locationtime " \
-            f"BETWEEN {start_time} AND {end_time} LIMIT {rds_limit};"
+        query_text = f" \
+            SELECT DISTINCT ON (tripid, locationtime) * \
+            FROM active_trips_study \
+            WHERE locationtime \
+            BETWEEN {start_time} AND {end_time} \
+            ORDER BY tripid, locationtime, collectedtime ASC \
+            LIMIT {rds_limit};"
     else:
-        query_text = f"SELECT * FROM active_trips_study WHERE locationtime " \
-            f"BETWEEN {start_time} AND {end_time};"
+        query_text = f" \
+            SELECT DISTINCT ON (tripid, locationtime) * \
+            FROM active_trips_study \
+            WHERE locationtime \
+            BETWEEN {start_time} AND {end_time} \
+            ORDER BY tripid, locationtime, collectedtime ASC;"
     with conn.cursor() as curs:
         curs.execute(query_text)
         daily_results = convert_cursor_to_tabular(curs)
@@ -468,7 +477,7 @@ def upload_to_dynamo(dynamodb_table, to_upload, end_time):
             )
     return
 
-def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, upload):
+def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, update_gtfs, save_locally, save_dates, upload):
     """Queries 24hrs of data from RDS, calculates speeds, and uploads them.
 
     Runs daily to take 24hrs worth of data stored in the data warehouse
@@ -491,6 +500,7 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
             into.
         save_locally: Boolean specifying whether to save the processed data to
             a folder on the user's machine.
+        save_dates: List of strings containing days that data should be queried for.
         upload: Boolean specifying whether to upload the processed data to the
             dynamodb table.
 
@@ -506,58 +516,64 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
     # Load scraped data, return if there is no data found, process otherwise
     print("Connecting to RDS...")
     conn = connect_to_rds()
-    print("Querying data from RDS (~5mins if no limit specified)...")
-    all_daily_results = []
-    end_time = round(datetime.now().timestamp())
-    # Break up the query into {split_data} pieces
-    for i in range(0, split_data):
-        start_time = int(round(end_time - (24*60*60/split_data), 0))
-        daily_results = get_results_by_time(conn, start_time, end_time, rds_limit)
-        if daily_results is None:
-            print(f"No results found for {start_time}")
-            continue
-        print(f"Processing queried RDS data...{i+1}/{split_data}")
-        daily_results = preprocess_trip_data(daily_results)
-        all_daily_results.append(daily_results)
-        del daily_results
-        end_time = start_time
-    if len(all_daily_results) == 0:
-        return 0
-    daily_results = pd.concat(all_daily_results)
 
-    print(f"Loading route segments from {geojson_name}")
-    # Load the route segments shapefile
-    with open(f'{geojson_name}.geojson', 'r') as shapefile:
-        kcm_routes = json.load(shapefile)
+    for day in save_dates:
+        end_time = round(datetime.strptime(day, '%Y-%m-%d').timestamp()) + (24*60*60)
+        print(f"Querying {day} data from RDS (~5mins if no limit specified)...")
+        all_daily_results = []
+        # Break up the query into {split_data} pieces
+        for i in range(0, split_data):
+            start_time = int(round(end_time - (24*60*60/split_data), 0))
+            daily_results = get_results_by_time(conn, start_time, end_time, rds_limit)
+            if daily_results is None:
+                print(f"No results found for {start_time}")
+                continue
+            print(f"Processing queried RDS data...{i+1}/{split_data}")
+            daily_results = preprocess_trip_data(daily_results)
+            all_daily_results.append(daily_results)
+            del daily_results
+            end_time = start_time
+        if len(all_daily_results) == 0:
+            return 0
+        daily_results = pd.concat(all_daily_results)
 
-    # Find the closest segment w/matching route for each speed in daily results
-    print("Matching speeds to segments...")
-    daily_results = assign_results_to_segments(kcm_routes, daily_results)
+        print(f"Loading route segments from {geojson_name}")
+        # Load the route segments shapefile
+        with open(f'{geojson_name}.geojson', 'r') as shapefile:
+            kcm_routes = json.load(shapefile)
 
-    # Save the processed data for the user as .csv if specified
-    if save_locally:
-        outdir = "./transit_vis/data/to_upload"
-        outfile = datetime.utcfromtimestamp(start_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y')
-        if not os.path.exists(outdir):
-            os.mkdir(outdir)
-        print("Saving processed speeds to data folder...")
-        daily_results.to_csv(f"{outdir}/{outfile}.csv", index=False)
+        # Find the closest segment w/matching route for each speed in daily results
+        print("Matching speeds to segments...")
+        daily_results = assign_results_to_segments(kcm_routes, daily_results)
 
-    # Upload to dynamoDB
-    if upload:
-        print("Aggregating and Uploading segment data to dynamoDB...")
-        table = connect_to_dynamo_table(dynamodb_table_name)
-        upload_to_dynamo(table, daily_results, start_time)
+        # Save the processed data for the user as .csv if specified
+        if save_locally:
+            outdir = "./transit_vis/data/to_upload"
+            outfile = datetime.utcfromtimestamp(start_time).replace(tzinfo=pytz.utc).astimezone(TZ).strftime('%m_%d_%Y')
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+            print("Saving processed speeds to data folder...")
+            daily_results.to_csv(f"{outdir}/{outfile}.csv", index=False)
+
+        # Upload to dynamoDB
+        if upload:
+            print("Aggregating and Uploading segment data to dynamoDB...")
+            table = connect_to_dynamo_table(dynamodb_table_name)
+            upload_to_dynamo(table, daily_results, start_time)
+
+        print(f"Date: {day} Number of tracks: {len(daily_results)}")
 
     return len(daily_results)
 
 if __name__ == "__main__":
+    current_day = datetime.now().strftime('%Y-%m-%d')
     NUM_SEGMENTS_UPDATED = summarize_rds(
-        geojson_name='./transit_vis/data/streets_routes_0001buffer',
+        geojson_name='./transit_vis/data/streets_routes_0002buffer',
         dynamodb_table_name='KCM_Bus_Routes',
         rds_limit=0,
-        split_data=3,
+        split_data=1,
         update_gtfs=False,
-        save_locally=False,
-        upload=True)
-    print(f"Number of tracks: {NUM_SEGMENTS_UPDATED}")
+        save_locally=True,
+        save_dates=['2021-03-03','2021-03-04','2021-03-05','2021-03-08','2021-03-09','2021-03-10','2021-03-11','2021-03-12','2021-03-16'],
+        upload=False)
+    print(f"Number of tracks for last day: {NUM_SEGMENTS_UPDATED}")
