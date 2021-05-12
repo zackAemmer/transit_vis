@@ -38,6 +38,7 @@ const MapControls = (props) => {
             <h4>Performance Metric</h4>
             <select className="info" onChange={handleMetricChange} defaultValue="SPEED">
                 <option value="SPEED_MED">Median Speed (mph)</option>
+                <option value="PACE_MED">Pace (sec/mi)</option>
                 <option value="SPEED_STD">Standard Deviation Speed (mph)</option>
                 <option value="SPEED_PCT_95">95th Percentile Speed (mph)</option>
                 <option value="SPEED_PCT_5">5th Percentile Speed (mph)</option>

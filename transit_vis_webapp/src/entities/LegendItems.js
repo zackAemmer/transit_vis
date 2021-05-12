@@ -37,6 +37,9 @@ class LegendItems {
                         metric_ary.push(this.features[i].properties.SPEED_PCT_5_FULL_DAY);
                     };
                     break;
+                case "PACE_MED":
+                    metric_ary.push(this.features[i].properties.PACE_MED_FULL_DAY);
+                    break;
                 case "DEVIATION_MED":
                     metric_ary.push(this.features[i].properties.DEVIATION_MED_FULL_DAY);
                     break;
@@ -100,6 +103,8 @@ class LegendItems {
                 return ("mph");
             case "SPEED_PCT_5":
                 return ("mph");
+            case "PACE_MED":
+                return ("sec/mi");
             case "DEVIATION_MED":
                 return ("s");
             case "DEVIATION_STD":
@@ -113,7 +118,7 @@ class LegendItems {
         const GRADES = this.calculateGrades();
         const UNITS = this.getUnits();
         let COLORS = d3ScaleChromatic.schemeRdYlBu[this.numBins];
-        const reversed = ["SPEED_STD","DEVIATION_MED","DEVIATION_STD"];
+        const reversed = ["SPEED_STD","PACE_MED","DEVIATION_MED","DEVIATION_STD"];
 
         if (reversed.includes(this.metric)) {
             let reversedCOLORS = [];

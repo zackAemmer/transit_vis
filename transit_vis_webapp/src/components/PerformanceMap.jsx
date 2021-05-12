@@ -52,6 +52,9 @@ const PerformanceMap = (props) => {
         case "SPEED_PCT_5":
           featureValue = feature.properties.SPEED_PCT_5_AM;
           break;
+        case "PACE_MED":
+          featureValue = feature.properties.PACE_MED_AM;
+          break;
         case "DEVIATION_MED":
           featureValue = feature.properties.DEVIATION_MED_AM;
           break;
@@ -77,6 +80,9 @@ const PerformanceMap = (props) => {
         case "SPEED_PCT_5":
           featureValue = feature.properties.SPEED_PCT_5_PM;
           break;
+        case "PACE_MED":
+          featureValue = feature.properties.PACE_MED_PM;
+          break;
         case "DEVIATION_MED":
           featureValue = feature.properties.DEVIATION_MED_PM;
           break;
@@ -101,6 +107,9 @@ const PerformanceMap = (props) => {
           break;
         case "SPEED_PCT_5":
           featureValue = feature.properties.SPEED_PCT_5_FULL_DAY;
+          break;
+        case "PACE_MED":
+          featureValue = feature.properties.PACE_MED_FULL_DAY;
           break;
         case "DEVIATION_MED":
           featureValue = feature.properties.DEVIATION_MED_FULL_DAY;

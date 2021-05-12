@@ -58,6 +58,10 @@ class LoadStreetsTask {
                 features[i].properties.SPEED_MED_PM = parseFloat(speed_med_ary[idx].PM) * 2.237; //MPH
                 features[i].properties.SPEED_MED_FULL_DAY = parseFloat(speed_med_ary[idx].FULL_DAY) * 2.237; //MPH
 
+                features[i].properties.PACE_MED_AM = 1 / (parseFloat(speed_med_ary[idx].AM) * 2.237) * 60 * 60; //sec/mi
+                features[i].properties.PACE_MED_PM = 1 / (parseFloat(speed_med_ary[idx].PM) * 2.237) * 60 * 60; //sec/mi
+                features[i].properties.PACE_MED_FULL_DAY = 1 / (parseFloat(speed_med_ary[idx].FULL_DAY) * 2.237) * 60 * 60; //sec/mi
+
                 features[i].properties.SPEED_STD_AM = Math.sqrt(parseFloat(speed_var_ary[idx].AM));
                 features[i].properties.SPEED_STD_PM = Math.sqrt(parseFloat(speed_var_ary[idx].PM));
                 features[i].properties.SPEED_STD_FULL_DAY = Math.sqrt(parseFloat(speed_var_ary[idx].FULL_DAY));
