@@ -13,7 +13,7 @@ smaller than 24hrs.
 """
 
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import os
 import requests
@@ -567,13 +567,14 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
 
 if __name__ == "__main__":
     current_day = datetime.now().strftime('%Y-%m-%d')
+    start_day = current_day - timedelta(days=1)
     NUM_SEGMENTS_UPDATED = summarize_rds(
         geojson_name='./transit_vis/data/streets_routes_0001buffer',
         dynamodb_table_name='KCM_Bus_Routes',
         rds_limit=0,
         split_data=3,
-        update_gtfs=False,
-        save_locally=True,
-        save_dates=['2021-03-17'],
-        upload=False)
+        update_gtfs=True,
+        save_locally=False,
+        save_dates=[start_day],
+        upload=True)
     print(f"Number of tracks for last day: {NUM_SEGMENTS_UPDATED}")
