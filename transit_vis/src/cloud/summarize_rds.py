@@ -566,8 +566,8 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
     return len(daily_results)
 
 if __name__ == "__main__":
-    current_day = datetime.now().strftime('%Y-%m-%d')
-    start_day = current_day - timedelta(days=1)
+    current_day = datetime.now()
+    start_day = (current_day - timedelta(days=1)).strftime('%Y-%m-%d')
     NUM_SEGMENTS_UPDATED = summarize_rds(
         geojson_name='./transit_vis/data/streets_routes_0001buffer',
         dynamodb_table_name='KCM_Bus_Routes',
