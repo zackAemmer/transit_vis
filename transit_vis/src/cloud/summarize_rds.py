@@ -519,14 +519,17 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
 
     for day in save_dates:
         end_time = round(datetime.strptime(day, '%Y-%m-%d').timestamp()) + (24*60*60)
+        end_time_upload = end_time
         print(f"Querying {day} data from RDS (~5mins if no limit specified)...")
         all_daily_results = []
         # Break up the query into {split_data} pieces
         for i in range(0, split_data):
             start_time = int(round(end_time - (24*60*60/split_data), 0))
+            print(start_time)
             daily_results = get_results_by_time(conn, start_time, end_time, rds_limit)
             if daily_results is None:
                 print(f"No results found for {start_time}")
+                end_time = start_time
                 continue
             print(f"Processing queried RDS data...{i+1}/{split_data}")
             daily_results = preprocess_trip_data(daily_results)
@@ -534,7 +537,7 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
             del daily_results
             end_time = start_time
         if len(all_daily_results) == 0:
-            return 0
+            continue
         daily_results = pd.concat(all_daily_results)
 
         print(f"Loading route segments from {geojson_name}")
@@ -559,22 +562,27 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
         if upload:
             print("Aggregating and Uploading segment data to dynamoDB...")
             table = connect_to_dynamo_table(dynamodb_table_name)
-            upload_to_dynamo(table, daily_results, start_time)
+            upload_to_dynamo(table, daily_results, end_time_upload)
 
         print(f"Date: {day} Number of tracks: {len(daily_results)}")
 
     return len(daily_results)
 
 if __name__ == "__main__":
+    date_list = []
     current_day = datetime.now()
-    start_day = (current_day - timedelta(days=1)).strftime('%Y-%m-%d')
+    numdays = 1
+    for x in range (0, numdays):
+        date_list.append((current_day - timedelta(days = x)).strftime('%Y-%m-%d'))
+    print(date_list)
+
     NUM_SEGMENTS_UPDATED = summarize_rds(
         geojson_name='./transit_vis/data/streets_routes_0001buffer',
         dynamodb_table_name='KCM_Bus_Routes',
         rds_limit=0,
         split_data=3,
         update_gtfs=True,
-        save_locally=False,
-        save_dates=[start_day],
-        upload=True)
+        save_locally=True,
+        save_dates=date_list,
+        upload=False)
     print(f"Number of tracks for last day: {NUM_SEGMENTS_UPDATED}")
