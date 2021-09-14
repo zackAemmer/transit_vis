@@ -525,7 +525,6 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
         # Break up the query into {split_data} pieces
         for i in range(0, split_data):
             start_time = int(round(end_time - (24*60*60/split_data), 0))
-            print(start_time)
             daily_results = get_results_by_time(conn, start_time, end_time, rds_limit)
             if daily_results is None:
                 print(f"No results found for {start_time}")
@@ -570,10 +569,12 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
 
 if __name__ == "__main__":
     date_list = []
+    start_back_days = 10*30
+    num_days = 365-(10*30)
     current_day = datetime.now()
-    numdays = 1
-    for x in range (0, numdays):
-        date_list.append((current_day - timedelta(days = x)).strftime('%Y-%m-%d'))
+    start_day = current_day - timedelta(days=start_back_days)
+    for x in range (0, num_days):
+        date_list.append((start_day - timedelta(days=x)).strftime('%Y-%m-%d'))
     print(date_list)
 
     NUM_SEGMENTS_UPDATED = summarize_rds(
@@ -581,7 +582,7 @@ if __name__ == "__main__":
         dynamodb_table_name='KCM_Bus_Routes',
         rds_limit=0,
         split_data=3,
-        update_gtfs=True,
+        update_gtfs=False,
         save_locally=True,
         save_dates=date_list,
         upload=False)

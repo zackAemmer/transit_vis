@@ -21,3 +21,5 @@ transit_vis/data/streets_0002buffer_tmp.geojson
 local_sampled_map.html
 
 node_modules/
+
+*.geojson
