@@ -23,3 +23,4 @@ local_sampled_map.html
 node_modules/
 
 *.geojson
+*.DS_Store
