@@ -42,7 +42,8 @@ def clean_active_trips(response):
     to_remove = []
     # Find indices of trips that are inactive or have no data
     for i, bus in enumerate(response['data']['list']):
-        if bus['tripId'] == '' or bus['status'] == 'CANCELED' or bus['location'] == None:
+        print(bus)
+        if bus['tripId'] == '' or bus['status'] == 'CANCELED' or bus['tripStatus']['position'] == None:
             to_remove.append(i)
     # Remove inactive trips starting with the last index
     for index in sorted(to_remove, reverse=True):
@@ -55,8 +56,8 @@ def upload_to_rds(to_upload, conn, collected_time):
         to_upload_list.append(
             (str(remove_agency_tag(bus_status['tripId'])),
             str(remove_agency_tag(bus_status['vehicleId'])),
-            str(round(bus_status['location']['lat'], 10)),
-            str(round(bus_status['location']['lon'], 10)),
+            str(round(bus_status['tripStatus']['position']['lat'], 10)),
+            str(round(bus_status['tripStatus']['position']['lon'], 10)),
             str(round(bus_status['tripStatus']['orientation'])),
             str(bus_status['tripStatus']['scheduleDeviation']),
             str(round(bus_status['tripStatus']['totalDistanceAlongTrip'], 10)),
