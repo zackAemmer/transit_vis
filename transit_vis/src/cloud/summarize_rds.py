@@ -539,6 +539,11 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
             continue
         daily_results = pd.concat(all_daily_results)
 
+        # If no data collected; return empty
+        if len(daily_results) == 0:
+            print("No data found.")
+            continue
+
         print(f"Loading route segments from {geojson_name}")
         # Load the route segments shapefile
         with open(f'{geojson_name}.geojson', 'r') as shapefile:
@@ -568,9 +573,10 @@ def summarize_rds(geojson_name, dynamodb_table_name, rds_limit, split_data, upda
     return len(daily_results)
 
 if __name__ == "__main__":
+    # Collect from current-start_back_days-numdays -> current-start_back_days
     date_list = []
-    start_back_days = 10*30
-    num_days = 365-(10*30)
+    start_back_days = 1
+    num_days = 7*30
     current_day = datetime.now()
     start_day = current_day - timedelta(days=start_back_days)
     for x in range (0, num_days):
@@ -582,7 +588,7 @@ if __name__ == "__main__":
         dynamodb_table_name='KCM_Bus_Routes',
         rds_limit=0,
         split_data=3,
-        update_gtfs=False,
+        update_gtfs=True,
         save_locally=True,
         save_dates=date_list,
         upload=False)
