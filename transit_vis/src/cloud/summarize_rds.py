@@ -344,7 +344,7 @@ def assign_results_to_segments(kcm_routes, daily_results):
             route_results['seg_length'] = np.array(result_segs['length'])
             route_results['seg_compkey'] = np.array(result_segs['compkey'])
             route_results['seg_route_id'] = np.array(result_segs['route_id'])
-            to_upload = to_upload.append(route_results)
+            to_upload = pd.concat([to_upload, route_results], axis=0)
         else:
             untracked.append(route)
             result_idxs = -1
